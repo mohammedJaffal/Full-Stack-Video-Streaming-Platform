@@ -2,17 +2,262 @@ import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { api, authHeaders } from '../lib/api';
 
-type Item = { id:number; title:string; slug:string; description:string; release_year:number; duration_seconds:number; poster_url:string; backdrop_url:string; category_id:number; category_name:string; playback_source:string; playback_type:'hls'|'mp4'; is_active:boolean };
-const blank = { title:'', slug:'', description:'', release_year:2026, duration_seconds:600, poster_url:'/media/posters/mountain-horizons.svg', backdrop_url:'/media/backdrops/mountain-horizons.svg', category_id:1, playback_source:'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', playback_type:'hls' as const, is_active:true };
+type ContentForm = {
+  title: string;
+  slug: string;
+  description: string;
+  release_year: number;
+  duration_seconds: number;
+  poster_url: string;
+  backdrop_url: string;
+  category_id: number;
+  playback_source: string;
+  playback_type: 'hls' | 'mp4';
+  is_active: boolean;
+};
+
+type Item = ContentForm & {
+  id: number;
+  category_name: string;
+};
+
+const blank: ContentForm = {
+  title: '',
+  slug: '',
+  description: '',
+  release_year: 2026,
+  duration_seconds: 600,
+  poster_url: '/media/posters/mountain-horizons.svg',
+  backdrop_url: '/media/backdrops/mountain-horizons.svg',
+  category_id: 1,
+  playback_source: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
+  playback_type: 'hls',
+  is_active: true,
+};
 
 export default function ContentManager() {
-  const [items,setItems]=useState<Item[]>([]); const [form,setForm]=useState({...blank}); const [editing,setEditing]=useState<number|null>(null); const [message,setMessage]=useState('');
-  const load=()=>api<Item[]>('/api/admin/content',{headers:authHeaders()}).then(setItems).catch(()=>location.href='/admin/login');
-  useEffect(load,[]);
-  const submit=async(e:FormEvent)=>{e.preventDefault(); const path=editing?`/api/admin/content/${editing}`:'/api/admin/content'; await api(path,{method:editing?'PUT':'POST',headers:authHeaders(),body:JSON.stringify(form)}); setMessage(editing?'Content updated.':'Content created.'); setEditing(null); setForm({...blank}); load();};
-  const edit=(i:Item)=>{setEditing(i.id);setForm({...blank,...i});scrollTo({top:0,behavior:'smooth'});};
-  const remove=async(id:number)=>{if(!confirm('Delete this content item?'))return;await api(`/api/admin/content/${id}`,{method:'DELETE',headers:authHeaders()});load();};
-  return <div className="admin-grid"><form className="panel content-form" onSubmit={submit}><div className="section-heading"><div><p className="eyebrow">Catalog editor</p><h2>{editing?'Edit content':'Add content'}</h2></div>{editing&&<button type="button" className="ghost" onClick={()=>{setEditing(null);setForm({...blank})}}>Cancel</button>}</div>{message&&<p className="success">{message}</p>}
-    <div className="form-grid"><label>Title<input value={form.title} required onChange={e=>setForm({...form,title:e.target.value,slug:e.target.value.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'')})}/></label><label>Slug<input value={form.slug} required onChange={e=>setForm({...form,slug:e.target.value})}/></label><label className="wide">Description<textarea value={form.description} required onChange={e=>setForm({...form,description:e.target.value})}/></label><label>Year<input type="number" value={form.release_year} onChange={e=>setForm({...form,release_year:Number(e.target.value)})}/></label><label>Duration seconds<input type="number" value={form.duration_seconds} onChange={e=>setForm({...form,duration_seconds:Number(e.target.value)})}/></label><label>Category<select value={form.category_id} onChange={e=>setForm({...form,category_id:Number(e.target.value)})}><option value="1">Nature</option><option value="2">Technology</option><option value="3">Education</option><option value="4">Documentary</option></select></label><label>Playback type<select value={form.playback_type} onChange={e=>setForm({...form,playback_type:e.target.value as 'hls'|'mp4'})}><option value="hls">HLS</option><option value="mp4">MP4</option></select></label><label>Active<select value={String(form.is_active)} onChange={e=>setForm({...form,is_active:e.target.value==='true'})}><option value="true">Enabled</option><option value="false">Disabled</option></select></label><label>Poster URL<input value={form.poster_url} onChange={e=>setForm({...form,poster_url:e.target.value})}/></label><label>Backdrop URL<input value={form.backdrop_url} onChange={e=>setForm({...form,backdrop_url:e.target.value})}/></label><label className="wide">Playback source<input value={form.playback_source} onChange={e=>setForm({...form,playback_source:e.target.value})}/></label></div><button type="submit">{editing?'Save changes':'Create content'}</button></form>
-    <section className="panel"><p className="eyebrow">Catalog</p><h2>All content</h2><div className="table-wrap"><table><thead><tr><th>Title</th><th>Category</th><th>Type</th><th>Status</th><th>Actions</th></tr></thead><tbody>{items.map(i=><tr key={i.id}><td><strong>{i.title}</strong><br/><small>{i.slug}</small></td><td>{i.category_name}</td><td>{i.playback_type.toUpperCase()}</td><td><span className={`status ${i.is_active?'completed':'failed'}`}>{i.is_active?'active':'disabled'}</span></td><td><button className="ghost" onClick={()=>edit(i)}>Edit</button> <button className="danger" onClick={()=>remove(i.id)}>Delete</button></td></tr>)}</tbody></table></div></section></div>;
+  const [items, setItems] = useState<Item[]>([]);
+  const [form, setForm] = useState<ContentForm>(blank);
+  const [editing, setEditing] = useState<number | null>(null);
+  const [message, setMessage] = useState('');
+
+  const load = () =>
+    api<Item[]>('/api/admin/content', { headers: authHeaders() })
+      .then(setItems)
+      .catch(() => {
+        location.href = '/admin/login';
+      });
+
+  useEffect(() => {
+    void load();
+  }, []);
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    const path = editing ? `/api/admin/content/${editing}` : '/api/admin/content';
+    await api(path, {
+      method: editing ? 'PUT' : 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(form),
+    });
+    setMessage(editing ? 'Content updated.' : 'Content created.');
+    setEditing(null);
+    setForm(blank);
+    await load();
+  };
+
+  const edit = (item: Item) => {
+    setEditing(item.id);
+    const { id: _id, category_name: _categoryName, ...editable } = item;
+    setForm(editable);
+    scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const remove = async (id: number) => {
+    if (!confirm('Delete this content item?')) return;
+    await api(`/api/admin/content/${id}`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+    });
+    await load();
+  };
+
+  return (
+    <div className="admin-grid">
+      <form className="panel content-form" onSubmit={submit}>
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">Catalog editor</p>
+            <h2>{editing ? 'Edit content' : 'Add content'}</h2>
+          </div>
+          {editing && (
+            <button
+              type="button"
+              className="ghost"
+              onClick={() => {
+                setEditing(null);
+                setForm(blank);
+              }}
+            >
+              Cancel
+            </button>
+          )}
+        </div>
+        {message && <p className="success">{message}</p>}
+        <div className="form-grid">
+          <label>
+            Title
+            <input
+              value={form.title}
+              required
+              onChange={(event) =>
+                setForm({
+                  ...form,
+                  title: event.target.value,
+                  slug: event.target.value
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]+/g, '-')
+                    .replace(/(^-|-$)/g, ''),
+                })
+              }
+            />
+          </label>
+          <label>
+            Slug
+            <input
+              value={form.slug}
+              required
+              onChange={(event) => setForm({ ...form, slug: event.target.value })}
+            />
+          </label>
+          <label className="wide">
+            Description
+            <textarea
+              value={form.description}
+              required
+              onChange={(event) => setForm({ ...form, description: event.target.value })}
+            />
+          </label>
+          <label>
+            Year
+            <input
+              type="number"
+              value={form.release_year}
+              onChange={(event) => setForm({ ...form, release_year: Number(event.target.value) })}
+            />
+          </label>
+          <label>
+            Duration seconds
+            <input
+              type="number"
+              value={form.duration_seconds}
+              onChange={(event) =>
+                setForm({ ...form, duration_seconds: Number(event.target.value) })
+              }
+            />
+          </label>
+          <label>
+            Category
+            <select
+              value={form.category_id}
+              onChange={(event) => setForm({ ...form, category_id: Number(event.target.value) })}
+            >
+              <option value="1">Nature</option>
+              <option value="2">Technology</option>
+              <option value="3">Education</option>
+              <option value="4">Documentary</option>
+            </select>
+          </label>
+          <label>
+            Playback type
+            <select
+              value={form.playback_type}
+              onChange={(event) =>
+                setForm({ ...form, playback_type: event.target.value as 'hls' | 'mp4' })
+              }
+            >
+              <option value="hls">HLS</option>
+              <option value="mp4">MP4</option>
+            </select>
+          </label>
+          <label>
+            Active
+            <select
+              value={String(form.is_active)}
+              onChange={(event) => setForm({ ...form, is_active: event.target.value === 'true' })}
+            >
+              <option value="true">Enabled</option>
+              <option value="false">Disabled</option>
+            </select>
+          </label>
+          <label>
+            Poster URL
+            <input
+              value={form.poster_url}
+              onChange={(event) => setForm({ ...form, poster_url: event.target.value })}
+            />
+          </label>
+          <label>
+            Backdrop URL
+            <input
+              value={form.backdrop_url}
+              onChange={(event) => setForm({ ...form, backdrop_url: event.target.value })}
+            />
+          </label>
+          <label className="wide">
+            Playback source
+            <input
+              value={form.playback_source}
+              onChange={(event) => setForm({ ...form, playback_source: event.target.value })}
+            />
+          </label>
+        </div>
+        <button type="submit">{editing ? 'Save changes' : 'Create content'}</button>
+      </form>
+
+      <section className="panel">
+        <p className="eyebrow">Catalog</p>
+        <h2>All content</h2>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Category</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((item) => (
+                <tr key={item.id}>
+                  <td>
+                    <strong>{item.title}</strong>
+                    <br />
+                    <small>{item.slug}</small>
+                  </td>
+                  <td>{item.category_name}</td>
+                  <td>{item.playback_type.toUpperCase()}</td>
+                  <td>
+                    <span className={`status ${item.is_active ? 'completed' : 'failed'}`}>
+                      {item.is_active ? 'active' : 'disabled'}
+                    </span>
+                  </td>
+                  <td>
+                    <button className="ghost" onClick={() => edit(item)}>
+                      Edit
+                    </button>{' '}
+                    <button className="danger" onClick={() => void remove(item.id)}>
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  );
 }
