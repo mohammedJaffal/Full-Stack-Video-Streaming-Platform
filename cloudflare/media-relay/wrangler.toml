@@ -1,0 +1,6 @@
+name = "streamforge-media-relay"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+
+[vars]
+ALLOWED_ORIGIN = "http://localhost:4321"

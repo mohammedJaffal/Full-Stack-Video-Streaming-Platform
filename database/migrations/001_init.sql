@@ -1,11 +1,78 @@
-CREATE TABLE IF NOT EXISTS categories (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, name VARCHAR(80) NOT NULL, slug VARCHAR(80) NOT NULL UNIQUE);
-CREATE TABLE IF NOT EXISTS content (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, title VARCHAR(180) NOT NULL, slug VARCHAR(180) NOT NULL UNIQUE, description TEXT NOT NULL, release_year SMALLINT UNSIGNED, duration_seconds INT UNSIGNED NOT NULL DEFAULT 0, poster_url TEXT, backdrop_url TEXT, category_id BIGINT UNSIGNED, playback_source TEXT NOT NULL, playback_type VARCHAR(20) NOT NULL DEFAULT 'hls', is_active BOOLEAN NOT NULL DEFAULT TRUE, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, FOREIGN KEY (category_id) REFERENCES categories(id));
-CREATE TABLE IF NOT EXISTS subtitles (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, content_id BIGINT UNSIGNED NOT NULL, language_code VARCHAR(12) NOT NULL, label VARCHAR(80) NOT NULL, file_url TEXT NOT NULL, format VARCHAR(12) NOT NULL DEFAULT 'vtt', is_default BOOLEAN NOT NULL DEFAULT FALSE, FOREIGN KEY (content_id) REFERENCES content(id) ON DELETE CASCADE);
-CREATE TABLE IF NOT EXISTS ingestion_jobs (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, job_type VARCHAR(40) NOT NULL, content_id BIGINT UNSIGNED NULL, status ENUM('queued','processing','completed','failed') NOT NULL DEFAULT 'queued', progress TINYINT UNSIGNED NOT NULL DEFAULT 0, error_message TEXT, started_at TIMESTAMP NULL, completed_at TIMESTAMP NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
-CREATE TABLE IF NOT EXISTS provider_health (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, provider_name VARCHAR(100) NOT NULL, status ENUM('online','warning','offline') NOT NULL, response_time_ms INT UNSIGNED, last_checked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, message VARCHAR(255));
-CREATE TABLE IF NOT EXISTS system_logs (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, level VARCHAR(20) NOT NULL, source VARCHAR(80) NOT NULL, message VARCHAR(500) NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
-INSERT IGNORE INTO categories (id,name,slug) VALUES (1,'Nature','nature'),(2,'Technology','technology'),(3,'Education','education'),(4,'Documentary','documentary');
-INSERT IGNORE INTO content (id,title,slug,description,release_year,duration_seconds,poster_url,backdrop_url,category_id,playback_source) VALUES
-(1,'Mountain Horizons','mountain-horizons','A calm cinematic journey across high mountain landscapes.',2026,596,'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=600&q=80','https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1600&q=80',1,'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8'),
-(2,'Digital Frontiers','digital-frontiers','A visual introduction to resilient web infrastructure.',2026,720,'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=600&q=80','https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1600&q=80',2,'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8');
-INSERT IGNORE INTO provider_health (id,provider_name,status,response_time_ms,message) VALUES (1,'Demo CDN','online',82,'Healthy'),(2,'Subtitle source','warning',620,'Elevated latency'),(3,'Archive source','offline',NULL,'Maintenance');
+CREATE TABLE IF NOT EXISTS categories (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL UNIQUE,
+  slug VARCHAR(120) NOT NULL UNIQUE
+);
+
+CREATE TABLE IF NOT EXISTS content (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  slug VARCHAR(255) NOT NULL UNIQUE,
+  description TEXT NOT NULL,
+  release_year SMALLINT UNSIGNED NOT NULL,
+  duration_seconds INT UNSIGNED NOT NULL,
+  poster_url VARCHAR(500) NOT NULL,
+  backdrop_url VARCHAR(500) NOT NULL,
+  category_id BIGINT UNSIGNED NOT NULL,
+  playback_source VARCHAR(1000) NOT NULL,
+  playback_type ENUM('hls','mp4') NOT NULL DEFAULT 'hls',
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_content_category FOREIGN KEY (category_id) REFERENCES categories(id)
+);
+
+CREATE TABLE IF NOT EXISTS subtitles (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  content_id BIGINT UNSIGNED NOT NULL,
+  language_code VARCHAR(12) NOT NULL,
+  label VARCHAR(80) NOT NULL,
+  file_url VARCHAR(500) NOT NULL,
+  format ENUM('vtt','srt') NOT NULL DEFAULT 'vtt',
+  is_default BOOLEAN NOT NULL DEFAULT FALSE,
+  CONSTRAINT fk_subtitle_content FOREIGN KEY (content_id) REFERENCES content(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS playback_sessions (
+  id CHAR(36) PRIMARY KEY,
+  content_id BIGINT UNSIGNED NOT NULL,
+  user_id VARCHAR(100) NULL,
+  token_hash CHAR(64) NOT NULL,
+  expires_at TIMESTAMP NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_playback_content FOREIGN KEY (content_id) REFERENCES content(id) ON DELETE CASCADE,
+  INDEX idx_playback_expires (expires_at)
+);
+
+CREATE TABLE IF NOT EXISTS ingestion_jobs (
+  id CHAR(36) PRIMARY KEY,
+  job_type ENUM('metadata_enrichment','subtitle_import','duplicate_detection') NOT NULL,
+  content_id BIGINT UNSIGNED NULL,
+  payload JSON NOT NULL,
+  status ENUM('queued','processing','completed','failed') NOT NULL DEFAULT 'queued',
+  progress TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  error_message TEXT NULL,
+  log_message TEXT NULL,
+  started_at TIMESTAMP NULL,
+  completed_at TIMESTAMP NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_jobs_status_created (status, created_at)
+);
+
+CREATE TABLE IF NOT EXISTS provider_health (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  provider_name VARCHAR(120) NOT NULL UNIQUE,
+  status ENUM('online','warning','offline') NOT NULL,
+  response_time_ms INT UNSIGNED NULL,
+  last_checked_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  message VARCHAR(500) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS system_logs (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  level ENUM('info','warning','error') NOT NULL,
+  source VARCHAR(120) NOT NULL,
+  message VARCHAR(1000) NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_logs_created (created_at)
+);

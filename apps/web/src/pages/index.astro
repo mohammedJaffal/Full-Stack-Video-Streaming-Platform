@@ -1,6 +1,13 @@
 ---
-const api = import.meta.env.PUBLIC_API_URL ?? 'http://localhost:8080';
-let items = [];
-try { const response = await fetch(`${api}/api/content`); if (response.ok) items = await response.json(); } catch {}
+import Layout from '../layouts/Layout.astro';
+import ContentCard from '../components/ContentCard.astro';
+import { API_URL } from '../lib/api';
+let items=[]; let error='';
+try { const r=await fetch(`${API_URL}/api/content`); if(!r.ok) throw new Error(); items=await r.json(); } catch { error='Start the API to load the seeded catalog.'; }
+const featured=items[0];
 ---
-<html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width"/><title>StreamForge</title><style>body{margin:0;background:#090b10;color:#f7f8fa;font-family:Inter,system-ui}main{max-width:1200px;margin:auto;padding:32px}.hero{padding:72px 40px;border-radius:24px;background:linear-gradient(90deg,#111827,transparent),url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1600&q=80') center/cover}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px}.card{background:#151923;border-radius:16px;overflow:hidden;color:inherit;text-decoration:none}.card img{width:100%;aspect-ratio:2/3;object-fit:cover}.card div{padding:16px}input{width:100%;max-width:420px;padding:14px 16px;border-radius:12px;border:1px solid #303747;background:#10141c;color:white;margin:28px 0}</style></head><body><main><section class="hero"><p>Featured documentary</p><h1>Mountain Horizons</h1><p>Secure adaptive HLS playback, subtitles, and responsive controls.</p><a href="/watch/1" style="color:white">Play now →</a></section><input id="search" placeholder="Search the catalog"/><h2>Recently added</h2><section class="grid" id="catalog">{items.map((item:any)=><a class="card" data-title={item.title.toLowerCase()} href={`/details/${item.slug}`}><img src={item.poster_url}/><div><strong>{item.title}</strong><p>{item.category}</p></div></a>)}</section></main><script>const input=document.querySelector('#search');input?.addEventListener('input',e=>{const q=e.target.value.toLowerCase();document.querySelectorAll('[data-title]').forEach(el=>el.style.display=el.dataset.title.includes(q)?'block':'none')});</script></body></html>
+<Layout title="StreamForge · Secure HLS Demo">
+  {featured ? <section class="hero" style={`background-image:linear-gradient(90deg,rgba(7,10,18,.96),rgba(7,10,18,.34)),url('${featured.backdrop_url}')`}><div class="hero-copy"><p class="eyebrow">Featured documentary</p><h1>{featured.title}</h1><p>{featured.description}</p><div class="actions"><a class="button" href={`/watch/${featured.slug}`}>▶ Play securely</a><a class="button ghost" href={`/content/${featured.slug}`}>More details</a></div></div></section> : <section class="hero"><div class="hero-copy"><h1>Secure streaming, connected end to end.</h1><p>{error}</p></div></section>}
+  <section class="page-section"><div class="section-heading"><div><p class="eyebrow">Discover</p><h2>Recently added</h2></div><a href="/explore">Browse all →</a></div><div class="card-grid">{items.map(item=><ContentCard item={item}/>)}</div></section>
+  <section class="page-section feature-strip"><article><strong>Short-lived URLs</strong><p>Playback sessions expire automatically.</p></article><article><strong>HLS controls</strong><p>Seeking, quality, subtitles, speed, and fullscreen.</p></article><article><strong>Operational dashboard</strong><p>Jobs, providers, and recent system logs.</p></article></section>
+</Layout>

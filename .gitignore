@@ -1,9 +1,18 @@
+# Environment
 .env
-.env.local
-node_modules/
-dist/
-target/
+.env.*
+!.env.example
+
+# Rust
+/target
+**/target
+
+# Node
+node_modules
+.astro
+dist
+
+# IDE / OS
 .DS_Store
-*.log
-coverage/
-.wrangler/
+.vscode
+.idea

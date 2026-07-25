@@ -1,0 +1,7 @@
+---
+import Layout from '../../layouts/Layout.astro';
+---
+<Layout title="Admin Login · StreamForge"><section class="login-wrap"><form id="login" class="panel login-panel"><p class="eyebrow">Protected area</p><h1>Administrator login</h1><p class="muted">Use the demo credentials from your environment file.</p><label>Email<input name="email" type="email" value="admin@example.com" required/></label><label>Password<input name="password" type="password" value="demo12345" required/></label><p id="error" class="error-text"></p><button type="submit">Sign in</button></form></section></Layout>
+<script>
+const API=import.meta.env.PUBLIC_API_URL||'http://localhost:8080';const form=document.querySelector('#login'),error=document.querySelector('#error');form.addEventListener('submit',async e=>{e.preventDefault();error.textContent='';const data=Object.fromEntries(new FormData(form));const r=await fetch(`${API}/api/auth/login`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});const body=await r.json();if(!r.ok){error.textContent=body.error||'Login failed';return}localStorage.setItem('admin_token',body.token);location.href='/admin'});
+</script>

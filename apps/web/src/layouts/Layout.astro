@@ -1,0 +1,25 @@
+---
+import '../styles/global.css';
+const { title = 'StreamForge', description = 'Secure HLS streaming platform demo' } = Astro.props;
+---
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width" />
+  <meta name="description" content={description} />
+  <title>{title}</title>
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/"><span>SF</span> StreamForge</a>
+    <nav>
+      <a href="/">Home</a>
+      <a href="/explore">Explore</a>
+      <a href="/admin">Admin</a>
+    </nav>
+  </header>
+  <main><slot /></main>
+  <footer>Portfolio demo · Authorized test media only</footer>
+</body>
+</html>
