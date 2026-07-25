@@ -2,5 +2,18 @@
 import Layout from '../../layouts/Layout.astro';
 import AdminApp from '../../components/AdminApp';
 ---
-<Layout title="Admin Dashboard · StreamForge"><section class="page-section admin-page"><div class="section-heading"><div><p class="eyebrow">Operations</p><h1>Admin dashboard</h1></div><div class="actions"><a class="button ghost" href="/admin/content">Manage content</a><button id="logout" class="danger">Log out</button></div></div><AdminApp client:load/></section></Layout>
-<script>document.querySelector('#logout')?.addEventListener('click',()=>{localStorage.removeItem('admin_token');location.href='/admin/login'});</script>
+<Layout title="Studio · StreamForge">
+  <section class="page-section admin-page">
+    <div class="section-heading">
+      <div><p class="eyebrow">StreamForge Studio</p><h1>Operations overview</h1></div>
+      <div class="actions"><a class="button ghost" href="/admin/content">Manage catalog</a><button id="logout" class="danger">Log out</button></div>
+    </div>
+    <AdminApp client:load />
+  </section>
+</Layout>
+<script>
+  document.querySelector('#logout')?.addEventListener('click', () => {
+    localStorage.removeItem('admin_token');
+    location.href = '/admin/login';
+  });
+</script>

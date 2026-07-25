@@ -1,7 +1,44 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 ---
-<Layout title="Admin Login · StreamForge"><section class="login-wrap"><form id="login" class="panel login-panel"><p class="eyebrow">Protected area</p><h1>Administrator login</h1><p class="muted">Use the demo credentials from your environment file.</p><label>Email<input name="email" type="email" value="admin@example.com" required/></label><label>Password<input name="password" type="password" value="demo12345" required/></label><p id="error" class="error-text"></p><button type="submit">Sign in</button></form></section></Layout>
+<Layout title="Studio Login · StreamForge">
+  <section class="login-wrap">
+    <form id="login" class="panel login-panel">
+      <p class="eyebrow">StreamForge Studio</p>
+      <h1>Manage the platform.</h1>
+      <p class="muted">Use the local demo administrator account to review content, jobs, providers, and logs.</p>
+      <label>Email<input name="email" type="email" value="admin@example.com" autocomplete="username" required /></label>
+      <label>Password<input name="password" type="password" value="demo12345" autocomplete="current-password" required /></label>
+      <p id="error" class="error-text" role="alert"></p>
+      <button type="submit">Continue to studio</button>
+    </form>
+  </section>
+</Layout>
 <script>
-const API=import.meta.env.PUBLIC_API_URL||'http://localhost:8080';const form=document.querySelector('#login'),error=document.querySelector('#error');form.addEventListener('submit',async e=>{e.preventDefault();error.textContent='';const data=Object.fromEntries(new FormData(form));const r=await fetch(`${API}/api/auth/login`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});const body=await r.json();if(!r.ok){error.textContent=body.error||'Login failed';return}localStorage.setItem('admin_token',body.token);location.href='/admin'});
+  const API = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
+  const form = document.querySelector('#login');
+  const error = document.querySelector('#error');
+  form.addEventListener('submit', async event => {
+    event.preventDefault();
+    error.textContent = '';
+    const button = form.querySelector('button');
+    button.disabled = true;
+    button.textContent = 'Signing in…';
+    try {
+      const data = Object.fromEntries(new FormData(form));
+      const response = await fetch(`${API}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || 'Login failed');
+      localStorage.setItem('admin_token', body.token);
+      location.href = '/admin';
+    } catch (reason) {
+      error.textContent = reason instanceof Error ? reason.message : 'Could not sign in';
+      button.disabled = false;
+      button.textContent = 'Continue to studio';
+    }
+  });
 </script>

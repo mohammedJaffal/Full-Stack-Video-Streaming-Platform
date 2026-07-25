@@ -40,19 +40,19 @@ pub async fn dashboard(
     _: AuthClaims,
     State(state): State<AppState>,
 ) -> Result<Json<Value>, AppError> {
-    let (total,): (i64,) = sqlx::query_as("SELECT COUNT(*) FROM content")
+    let (total,): (u64,) = sqlx::query_as("SELECT COUNT(*) FROM content")
         .fetch_one(&state.db)
         .await?;
-    let (queued,): (i64,) = sqlx::query_as(
+    let (queued,): (u64,) = sqlx::query_as(
         "SELECT COUNT(*) FROM ingestion_jobs WHERE status IN ('queued','processing')",
     )
     .fetch_one(&state.db)
     .await?;
-    let (completed,): (i64,) =
+    let (completed,): (u64,) =
         sqlx::query_as("SELECT COUNT(*) FROM ingestion_jobs WHERE status = 'completed'")
             .fetch_one(&state.db)
             .await?;
-    let (failed,): (i64,) =
+    let (failed,): (u64,) =
         sqlx::query_as("SELECT COUNT(*) FROM ingestion_jobs WHERE status = 'failed'")
             .fetch_one(&state.db)
             .await?;

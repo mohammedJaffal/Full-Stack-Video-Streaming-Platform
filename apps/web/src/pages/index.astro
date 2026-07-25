@@ -2,12 +2,60 @@
 import Layout from '../layouts/Layout.astro';
 import ContentCard from '../components/ContentCard.astro';
 import { API_URL } from '../lib/api';
-let items=[]; let error='';
-try { const r=await fetch(`${API_URL}/api/content`); if(!r.ok) throw new Error(); items=await r.json(); } catch { error='Start the API to load the seeded catalog.'; }
-const featured=items[0];
+let items = [];
+let error = '';
+try {
+  const response = await fetch(`${API_URL}/api/content`);
+  if (!response.ok) throw new Error();
+  items = await response.json();
+} catch {
+  error = 'The catalog service is temporarily unavailable.';
+}
+const featured = items[0];
 ---
 <Layout title="StreamForge · Secure HLS Demo">
-  {featured ? <section class="hero" style={`background-image:linear-gradient(90deg,rgba(7,10,18,.96),rgba(7,10,18,.34)),url('${featured.backdrop_url}')`}><div class="hero-copy"><p class="eyebrow">Featured documentary</p><h1>{featured.title}</h1><p>{featured.description}</p><div class="actions"><a class="button" href={`/watch/${featured.slug}`}>▶ Play securely</a><a class="button ghost" href={`/content/${featured.slug}`}>More details</a></div></div></section> : <section class="hero"><div class="hero-copy"><h1>Secure streaming, connected end to end.</h1><p>{error}</p></div></section>}
-  <section class="page-section"><div class="section-heading"><div><p class="eyebrow">Discover</p><h2>Recently added</h2></div><a href="/explore">Browse all →</a></div><div class="card-grid">{items.map(item=><ContentCard item={item}/>)}</div></section>
-  <section class="page-section feature-strip"><article><strong>Short-lived URLs</strong><p>Playback sessions expire automatically.</p></article><article><strong>HLS controls</strong><p>Seeking, quality, subtitles, speed, and fullscreen.</p></article><article><strong>Operational dashboard</strong><p>Jobs, providers, and recent system logs.</p></article></section>
+  {featured ? (
+    <section class="hero" style={`background-image:linear-gradient(90deg,rgba(10,10,11,.94),rgba(10,10,11,.16)),url('${featured.backdrop_url}')`}>
+      <div class="hero-copy">
+        <span class="hero-kicker">Featured selection</span>
+        <h1>{featured.title}</h1>
+        <p>{featured.description}</p>
+        <div class="meta">
+          <span>{featured.category_name}</span>
+          <span>{featured.release_year}</span>
+          <span>{Math.round(featured.duration_seconds / 60)} min</span>
+        </div>
+        <div class="actions">
+          <a class="button" href={`/watch/${featured.slug}`}>▶ Watch now</a>
+          <a class="button ghost" href={`/content/${featured.slug}`}>View details</a>
+        </div>
+      </div>
+    </section>
+  ) : (
+    <section class="hero">
+      <div class="hero-copy">
+        <span class="hero-kicker">Secure HLS platform</span>
+        <h1>Streaming infrastructure, presented clearly.</h1>
+        <p>{error}</p>
+      </div>
+    </section>
+  )}
+
+  <section class="page-section page-shell">
+    <div class="section-heading">
+      <div><p class="eyebrow">Library</p><h2>Recently added</h2></div>
+      <a class="section-link" href="/explore">Browse the full catalog →</a>
+    </div>
+    {items.length ? (
+      <div class="card-grid">{items.map(item => <ContentCard item={item} />)}</div>
+    ) : (
+      <div class="error-state"><div><strong>Catalog unavailable</strong><span>Check the API connection, then refresh this page.</span></div></div>
+    )}
+  </section>
+
+  <section class="page-section page-shell feature-strip">
+    <article><span class="feature-icon">⌁</span><div><strong>Expiring playback links</strong><p>Signed sessions keep manifests and segments behind short-lived access tokens.</p></div></article>
+    <article><span class="feature-icon">▶</span><div><strong>Adaptive HLS playback</strong><p>Quality selection, seeking, subtitles, playback speed, and fullscreen.</p></div></article>
+    <article><span class="feature-icon">↻</span><div><strong>Observable operations</strong><p>Background jobs, provider health, content management, and system logs.</p></div></article>
+  </section>
 </Layout>
