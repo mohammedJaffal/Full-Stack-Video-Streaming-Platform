@@ -2,8 +2,35 @@
 import Layout from '../../layouts/Layout.astro';
 import VideoPlayer from '../../components/VideoPlayer';
 import { API_URL } from '../../lib/api';
-const {slug}=Astro.params;let data=null;
-try{const r=await fetch(`${API_URL}/api/content/${slug}`);if(r.ok)data=await r.json();}catch{}
-if(!data)return Astro.redirect('/404');
+
+const { slug } = Astro.params;
+let data = null;
+
+try {
+  const response = await fetch(`${API_URL}/api/content/${slug}`);
+  if (response.ok) data = await response.json();
+} catch {
+  // Redirect below when the content service is unavailable.
+}
+
+if (!data) return Astro.redirect('/404');
 ---
-<Layout title={`Watch ${data.content.title} · StreamForge`}><section class="watch-page"><a class="back-link" href={`/content/${data.content.slug}`}>← Back to details</a><VideoPlayer client:load contentId={data.content.id} poster={data.content.backdrop_url}/><div class="watch-copy"><p class="eyebrow">Now playing</p><h1>{data.content.title}</h1><p>{data.content.description}</p></div></section></Layout>
+
+<Layout title={`Watch ${data.content.title} · StreamForge`}>
+  <section
+    class="watch-page"
+    style={`--watch-backdrop:url('${data.content.backdrop_url}')`}
+  >
+    <a class="back-link" href={`/content/${data.content.slug}`}>← Back to details</a>
+    <VideoPlayer
+      client:load
+      contentId={data.content.id}
+      poster={data.content.backdrop_url}
+    />
+    <div class="watch-copy">
+      <p class="eyebrow">Now playing</p>
+      <h1>{data.content.title}</h1>
+      <p>{data.content.description}</p>
+    </div>
+  </section>
+</Layout>
