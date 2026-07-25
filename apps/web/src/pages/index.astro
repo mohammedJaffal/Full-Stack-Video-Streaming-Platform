@@ -12,50 +12,26 @@ try {
   error = 'The catalog service is temporarily unavailable.';
 }
 const featured = items[0];
+const recent = items.slice(0, 6);
+const documentaries = items.filter(item => item.category_name === 'Documentary');
+const learning = items.filter(item => ['Technology', 'Education'].includes(item.category_name));
 ---
-<Layout title="StreamForge · Secure HLS Demo">
+<Layout title="StreamForge · Secure HLS Streaming">
   {featured ? (
     <section class="hero" style={`background-image:linear-gradient(90deg,rgba(10,10,11,.94),rgba(10,10,11,.16)),url('${featured.backdrop_url}')`}>
       <div class="hero-copy">
-        <span class="hero-kicker">Featured selection</span>
+        <span class="hero-kicker">Featured</span>
         <h1>{featured.title}</h1>
         <p>{featured.description}</p>
-        <div class="meta">
-          <span>{featured.category_name}</span>
-          <span>{featured.release_year}</span>
-          <span>{Math.round(featured.duration_seconds / 60)} min</span>
-        </div>
-        <div class="actions">
-          <a class="button" href={`/watch/${featured.slug}`}>▶ Watch now</a>
-          <a class="button ghost" href={`/content/${featured.slug}`}>View details</a>
-        </div>
+        <div class="meta"><span>{featured.category_name}</span><span>{featured.release_year}</span><span>{Math.round(featured.duration_seconds / 60)} min</span></div>
+        <div class="actions"><a class="button" href={`/watch/${featured.slug}`}>▶ Watch now</a><a class="button ghost" href={`/content/${featured.slug}`}>View details</a></div>
       </div>
     </section>
   ) : (
-    <section class="hero">
-      <div class="hero-copy">
-        <span class="hero-kicker">Secure HLS platform</span>
-        <h1>Streaming infrastructure, presented clearly.</h1>
-        <p>{error}</p>
-      </div>
-    </section>
+    <section class="hero"><div class="hero-copy"><h1>StreamForge</h1><p>{error}</p></div></section>
   )}
 
-  <section class="page-section page-shell">
-    <div class="section-heading">
-      <div><p class="eyebrow">Library</p><h2>Recently added</h2></div>
-      <a class="section-link" href="/explore">Browse the full catalog →</a>
-    </div>
-    {items.length ? (
-      <div class="card-grid">{items.map(item => <ContentCard item={item} />)}</div>
-    ) : (
-      <div class="error-state"><div><strong>Catalog unavailable</strong><span>Check the API connection, then refresh this page.</span></div></div>
-    )}
-  </section>
-
-  <section class="page-section page-shell feature-strip">
-    <article><span class="feature-icon">⌁</span><div><strong>Expiring playback links</strong><p>Signed sessions keep manifests and segments behind short-lived access tokens.</p></div></article>
-    <article><span class="feature-icon">▶</span><div><strong>Adaptive HLS playback</strong><p>Quality selection, seeking, subtitles, playback speed, and fullscreen.</p></div></article>
-    <article><span class="feature-icon">↻</span><div><strong>Observable operations</strong><p>Background jobs, provider health, content management, and system logs.</p></div></article>
-  </section>
+  {recent.length > 0 && <section class="page-section page-shell"><div class="section-heading"><div><h2>Recently added</h2></div><a class="section-link" href="/explore">Browse all →</a></div><div class="card-grid">{recent.map(item => <ContentCard item={item} />)}</div></section>}
+  {documentaries.length > 0 && <section class="page-section page-shell content-row"><div class="section-heading"><h2>Documentaries</h2></div><div class="card-grid">{documentaries.map(item => <ContentCard item={item} />)}</div></section>}
+  {learning.length > 0 && <section class="page-section page-shell content-row"><div class="section-heading"><h2>Technology & education</h2></div><div class="card-grid">{learning.map(item => <ContentCard item={item} />)}</div></section>}
 </Layout>
