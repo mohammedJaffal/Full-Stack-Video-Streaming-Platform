@@ -1,7 +1,7 @@
 ---
 import '../styles/global.css';
 import '../styles/editorial.css';
-const { title = 'StreamForge', description = 'Secure HLS streaming platform demo' } = Astro.props;
+const { title = 'StreamForge', description = 'Secure HLS streaming platform' } = Astro.props;
 ---
 <!doctype html>
 <html lang="en">
@@ -13,14 +13,14 @@ const { title = 'StreamForge', description = 'Secure HLS streaming platform demo
 </head>
 <body>
   <header class="site-header">
-    <a class="brand" href="/"><span>SF</span> StreamForge</a>
+    <a class="brand" href="/" aria-label="StreamForge home"><span>SF</span> StreamForge</a>
     <nav aria-label="Primary navigation">
       <a href="/">Home</a>
       <a href="/explore">Browse</a>
-      <a href="/admin">Studio</a>
+      <a href="/explore" aria-label="Search the catalog">Search</a>
     </nav>
   </header>
   <main><slot /></main>
-  <footer>StreamForge portfolio demo · Tokenized HLS delivery</footer>
+  <footer>StreamForge · Secure adaptive streaming</footer>
 </body>
 </html>
