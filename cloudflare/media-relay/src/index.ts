@@ -1,10 +1,10 @@
 interface Env { PLAYBACK_SIGNING_SECRET: string; ALLOWED_ORIGIN: string }
-type Claims = { sub: string; source: string; exp: number };
+export type Claims = { sub: string; source: string; exp: number };
 
 const encoder = new TextEncoder();
 const decodeBase64Url = (value: string) => Uint8Array.from(atob(value.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(value.length / 4) * 4, '=')), c => c.charCodeAt(0));
 
-async function verify(token: string, secret: string): Promise<Claims> {
+export async function verify(token: string, secret: string): Promise<Claims> {
   const [header, payload, signature] = token.split('.');
   if (!header || !payload || !signature) throw new Error('Malformed token');
   const key = await crypto.subtle.importKey('raw', encoder.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['verify']);
@@ -25,25 +25,46 @@ function cors(env: Env, headers = new Headers()) {
   return headers;
 }
 
+export function assertAuthorizedTarget(target: URL, source: URL) {
+  if (target.protocol !== 'https:' || target.hostname !== source.hostname) throw new Error('Target is outside the authorized origin');
+}
+
 function targetFromRequest(requestUrl: URL, claims: Claims) {
   const requested = requestUrl.searchParams.get('url');
   if (!requested) return new URL(claims.source);
   const target = new URL(requested);
-  const origin = new URL(claims.source);
-  if (target.protocol !== 'https:' || target.hostname !== origin.hostname) throw new Error('Target is outside the authorized origin');
+  assertAuthorizedTarget(target, new URL(claims.source));
   return target;
 }
 
-function rewriteManifest(text: string, manifestUrl: URL, requestUrl: URL, token: string) {
+function relayUrl(absolute: string, requestUrl: URL, token: string) {
+  const relay = new URL('/relay', requestUrl.origin);
+  relay.searchParams.set('token', token);
+  relay.searchParams.set('url', absolute);
+  return relay.toString();
+}
+
+export function rewriteManifest(text: string, manifestUrl: URL, requestUrl: URL, token: string) {
   return text.split(/\r?\n/).map(line => {
     const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) return line;
-    const absolute = new URL(trimmed, manifestUrl).toString();
-    const relay = new URL('/relay', requestUrl.origin);
-    relay.searchParams.set('token', token);
-    relay.searchParams.set('url', absolute);
-    return relay.toString();
+    if (!trimmed) return line;
+    if (!trimmed.startsWith('#')) return relayUrl(new URL(trimmed, manifestUrl).toString(), requestUrl, token);
+    return line.replace(/URI="([^"]+)"/g, (_match, uri: string) => `URI="${relayUrl(new URL(uri, manifestUrl).toString(), requestUrl, token)}"`);
   }).join('\n');
+}
+
+async function fetchAuthorized(target: URL, source: URL, init: RequestInit, remainingRedirects = 3): Promise<Response> {
+  assertAuthorizedTarget(target, source);
+  const response = await fetch(target, { ...init, redirect: 'manual' });
+  if (response.status >= 300 && response.status < 400) {
+    if (remainingRedirects <= 0) throw new Error('Too many media redirects');
+    const location = response.headers.get('location');
+    if (!location) throw new Error('Redirect missing Location header');
+    const next = new URL(location, target);
+    assertAuthorizedTarget(next, source);
+    return fetchAuthorized(next, source, init, remainingRedirects - 1);
+  }
+  return response;
 }
 
 export default {
@@ -55,11 +76,12 @@ export default {
     try {
       const token = url.searchParams.get('token') || '';
       const claims = await verify(token, env.PLAYBACK_SIGNING_SECRET);
+      const source = new URL(claims.source);
       const target = targetFromRequest(url, claims);
       const upstreamHeaders = new Headers();
       const range = request.headers.get('Range');
       if (range) upstreamHeaders.set('Range', range);
-      const upstream = await fetch(target, { method: request.method, headers: upstreamHeaders, redirect: 'follow' });
+      const upstream = await fetchAuthorized(target, source, { method: request.method, headers: upstreamHeaders });
       const headers = cors(env, new Headers(upstream.headers));
       headers.set('Cache-Control', target.pathname.endsWith('.m3u8') ? 'private, no-store' : 'private, max-age=60');
       if (request.method === 'HEAD') return new Response(null, { status: upstream.status, headers });
