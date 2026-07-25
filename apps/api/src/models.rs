@@ -1,4 +1,4 @@
-use chrono::NaiveDateTime;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
@@ -34,7 +34,7 @@ pub struct ContentSummary {
     pub category_name: String,
     pub playback_type: String,
     pub is_active: bool,
-    pub created_at: NaiveDateTime,
+    pub created_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Serialize, FromRow)]
@@ -52,7 +52,7 @@ pub struct AdminContentItem {
     pub playback_source: String,
     pub playback_type: String,
     pub is_active: bool,
-    pub created_at: NaiveDateTime,
+    pub created_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Serialize)]
@@ -134,9 +134,9 @@ pub struct Job {
     pub progress: u8,
     pub error_message: Option<String>,
     pub log_message: Option<String>,
-    pub started_at: Option<NaiveDateTime>,
-    pub completed_at: Option<NaiveDateTime>,
-    pub created_at: NaiveDateTime,
+    pub started_at: Option<DateTime<Utc>>,
+    pub completed_at: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Serialize, FromRow)]
@@ -145,7 +145,7 @@ pub struct ProviderHealth {
     pub provider_name: String,
     pub status: String,
     pub response_time_ms: Option<u32>,
-    pub last_checked_at: NaiveDateTime,
+    pub last_checked_at: DateTime<Utc>,
     pub message: String,
 }
 
@@ -155,5 +155,5 @@ pub struct SystemLog {
     pub level: String,
     pub source: String,
     pub message: String,
-    pub created_at: NaiveDateTime,
+    pub created_at: DateTime<Utc>,
 }
