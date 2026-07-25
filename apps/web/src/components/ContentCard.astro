@@ -3,7 +3,10 @@ const { item } = Astro.props;
 const minutes = Math.round(item.duration_seconds / 60);
 ---
 <a class="content-card" href={`/content/${item.slug}`}>
-  <img src={item.poster_url} alt={`${item.title} poster`} loading="lazy" />
+  <div class="poster-wrap">
+    <img src={item.poster_url} alt={`${item.title} poster`} loading="lazy" />
+    <span class="card-overlay" aria-hidden="true">▶</span>
+  </div>
   <div class="card-copy">
     <h3>{item.title}</h3>
     <p>{item.category_name} · {item.release_year} · {minutes} min</p>
