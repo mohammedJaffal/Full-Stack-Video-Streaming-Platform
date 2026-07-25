@@ -3,7 +3,7 @@ import '@vidstack/react/player/styles/default/layouts/video.css';
 
 import { MediaPlayer, MediaProvider, Poster, Track } from '@vidstack/react';
 import { defaultLayoutIcons, DefaultVideoLayout } from '@vidstack/react/player/layouts/default';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api } from '../lib/api';
 
 type Subtitle = {
@@ -28,6 +28,7 @@ type VideoPlayerProps = {
 };
 
 export default function VideoPlayer({ contentId, poster, title }: VideoPlayerProps) {
+  const playerShellRef = useRef<HTMLElement | null>(null);
   const [playback, setPlayback] = useState<Playback | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -59,6 +60,56 @@ export default function VideoPlayer({ contentId, poster, title }: VideoPlayerPro
     };
   }, [contentId]);
 
+  useEffect(() => {
+    const playerShell = playerShellRef.current;
+    if (!playerShell || !playback) return;
+
+    let animationFrame = 0;
+
+    const centerSelectedQuality = () => {
+      cancelAnimationFrame(animationFrame);
+      animationFrame = requestAnimationFrame(() => {
+        const qualityPanel = Array.from(
+          playerShell.querySelectorAll<HTMLElement>('.vds-menu-items[data-submenu]'),
+        ).find(panel => panel.offsetParent !== null && /quality/i.test(panel.textContent || ''));
+
+        if (!qualityPanel) return;
+
+        const selectedItem = qualityPanel.querySelector<HTMLElement>(
+          '[role="menuitemradio"][aria-checked="true"], [role="radio"][aria-checked="true"], [data-checked]',
+        );
+        const scrollContainer = qualityPanel.closest<HTMLElement>('.vds-menu-items[data-root]') || qualityPanel;
+
+        if (!selectedItem || scrollContainer.scrollHeight <= scrollContainer.clientHeight) return;
+
+        const containerRect = scrollContainer.getBoundingClientRect();
+        const selectedRect = selectedItem.getBoundingClientRect();
+        const centeredTop =
+          scrollContainer.scrollTop +
+          selectedRect.top -
+          containerRect.top -
+          (scrollContainer.clientHeight - selectedRect.height) / 2;
+
+        scrollContainer.scrollTop = Math.max(0, centeredTop);
+      });
+    };
+
+    const observer = new MutationObserver(centerSelectedQuality);
+    observer.observe(playerShell, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ['aria-checked', 'data-checked', 'data-open', 'hidden', 'style'],
+    });
+    playerShell.addEventListener('click', centerSelectedQuality);
+
+    return () => {
+      cancelAnimationFrame(animationFrame);
+      observer.disconnect();
+      playerShell.removeEventListener('click', centerSelectedQuality);
+    };
+  }, [playback]);
+
   if (loading) {
     return (
       <section className="player-state player-loading-state" aria-live="polite">
@@ -85,7 +136,7 @@ export default function VideoPlayer({ contentId, poster, title }: VideoPlayerPro
   }
 
   return (
-    <section className="player-shell vidstack-shell">
+    <section ref={playerShellRef} className="player-shell vidstack-shell">
       <MediaPlayer
         className="streamforge-player"
         title={title}
