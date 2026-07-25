@@ -1,19 +1,13 @@
 ---
-import Layout from '../../layouts/Layout.astro';
+import AdminLayout from '../../layouts/AdminLayout.astro';
 import AdminApp from '../../components/AdminApp';
 ---
-<Layout title="Studio · StreamForge">
-  <section class="page-section admin-page">
-    <div class="section-heading">
-      <div><p class="eyebrow">StreamForge Studio</p><h1>Operations overview</h1></div>
-      <div class="actions"><a class="button" href="/admin/content">Manage catalog</a><button id="logout" class="logout-button">Log out</button></div>
+<AdminLayout title="Overview · StreamForge Studio" active="overview">
+  <section class="admin-page">
+    <div class="admin-page-heading">
+      <div><p class="eyebrow">Operations</p><h1>Overview</h1><p>Monitor catalog activity, background work, providers, and recent system events.</p></div>
+      <a class="button" href="/admin/content">Manage catalog</a>
     </div>
     <AdminApp client:load />
   </section>
-</Layout>
-<script>
-  document.querySelector('#logout')?.addEventListener('click', () => {
-    localStorage.removeItem('admin_token');
-    location.href = '/admin/login';
-  });
-</script>
+</AdminLayout>
