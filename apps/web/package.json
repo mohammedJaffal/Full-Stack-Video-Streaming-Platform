@@ -1,0 +1,8 @@
+{
+  "name": "streaming-web",
+  "private": true,
+  "type": "module",
+  "scripts": {"dev":"astro dev","build":"astro build","preview":"astro preview"},
+  "dependencies": {"@astrojs/react":"latest","@astrojs/tailwind":"latest","astro":"latest","hls.js":"latest","react":"latest","react-dom":"latest","tailwindcss":"latest"},
+  "devDependencies": {"typescript":"latest"}
+}
