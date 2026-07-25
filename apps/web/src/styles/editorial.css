@@ -75,10 +75,10 @@ button, .button { border-radius: var(--radius-sm); }
   --media-controls-color: #fff;
   --media-tooltip-bg: rgba(18,18,20,.96);
   --media-tooltip-color: #fff;
-  --media-menu-max-height: min(72vh, 460px);
-  --media-menu-video-max-height: min(460px, calc(var(--player-height) * .82));
-  --media-sm-menu-portrait-max-height: min(72dvh, 460px);
-  --media-sm-menu-landscape-max-height: min(78dvh, 460px);
+  --media-menu-max-height: min(58vh, 330px);
+  --media-menu-video-max-height: min(330px, calc(var(--player-height) * .68));
+  --media-sm-menu-portrait-max-height: min(58dvh, 330px);
+  --media-sm-menu-landscape-max-height: min(68dvh, 330px);
   --media-menu-item-height: 48px;
 }
 
@@ -114,17 +114,27 @@ button, .button { border-radius: var(--radius-sm); }
   box-shadow: 0 20px 50px rgba(0,0,0,.45);
 }
 .streamforge-player .vds-menu-items[data-root] {
+  overflow: hidden;
+}
+.streamforge-player .vds-menu-items[data-submenu] {
+  justify-content: flex-start;
+  max-height: 224px;
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
-}
-.streamforge-player .vds-menu-items[data-submenu] {
-  justify-content: flex-start;
+  scroll-behavior: smooth;
 }
 .streamforge-player .vds-menu-items[data-submenu] > * {
   flex: 0 0 auto;
   width: 100%;
+  min-height: 48px;
+}
+.streamforge-player .vds-menu-items[data-submenu]::-webkit-scrollbar { width: 7px; }
+.streamforge-player .vds-menu-items[data-submenu]::-webkit-scrollbar-track { background: transparent; }
+.streamforge-player .vds-menu-items[data-submenu]::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(255,255,255,.2);
 }
 .streamforge-player .vds-accessibility-menu { display: none; }
 .streamforge-player .vds-slider { --media-slider-height: 34px; }
