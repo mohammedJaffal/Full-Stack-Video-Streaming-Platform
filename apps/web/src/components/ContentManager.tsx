@@ -12,7 +12,7 @@ type ContentForm = {
   backdrop_url: string;
   category_id: number;
   playback_source: string;
-  playback_type: 'hls' | 'mp4';
+  playback_type: 'hls';
   is_active: boolean;
 };
 
@@ -58,7 +58,7 @@ export default function ContentManager() {
     await api(path, {
       method: editing ? 'PUT' : 'POST',
       headers: authHeaders(),
-      body: JSON.stringify(form),
+      body: JSON.stringify({ ...form, playback_type: 'hls' }),
     });
     setMessage(editing ? 'Content updated.' : 'Content created.');
     setEditing(null);
@@ -69,7 +69,7 @@ export default function ContentManager() {
   const edit = (item: Item) => {
     setEditing(item.id);
     const { id: _id, category_name: _categoryName, ...editable } = item;
-    setForm(editable);
+    setForm({ ...editable, playback_type: 'hls' });
     scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -91,172 +91,33 @@ export default function ContentManager() {
             <h2>{editing ? 'Edit content' : 'Add content'}</h2>
           </div>
           {editing && (
-            <button
-              type="button"
-              className="ghost"
-              onClick={() => {
-                setEditing(null);
-                setForm(blank);
-              }}
-            >
+            <button type="button" className="ghost" onClick={() => { setEditing(null); setForm(blank); }}>
               Cancel
             </button>
           )}
         </div>
         {message && <p className="success">{message}</p>}
         <div className="form-grid">
-          <label>
-            Title
-            <input
-              value={form.title}
-              required
-              onChange={(event) =>
-                setForm({
-                  ...form,
-                  title: event.target.value,
-                  slug: event.target.value
-                    .toLowerCase()
-                    .replace(/[^a-z0-9]+/g, '-')
-                    .replace(/(^-|-$)/g, ''),
-                })
-              }
-            />
-          </label>
-          <label>
-            Slug
-            <input
-              value={form.slug}
-              required
-              onChange={(event) => setForm({ ...form, slug: event.target.value })}
-            />
-          </label>
-          <label className="wide">
-            Description
-            <textarea
-              value={form.description}
-              required
-              onChange={(event) => setForm({ ...form, description: event.target.value })}
-            />
-          </label>
-          <label>
-            Year
-            <input
-              type="number"
-              value={form.release_year}
-              onChange={(event) => setForm({ ...form, release_year: Number(event.target.value) })}
-            />
-          </label>
-          <label>
-            Duration seconds
-            <input
-              type="number"
-              value={form.duration_seconds}
-              onChange={(event) =>
-                setForm({ ...form, duration_seconds: Number(event.target.value) })
-              }
-            />
-          </label>
-          <label>
-            Category
-            <select
-              value={form.category_id}
-              onChange={(event) => setForm({ ...form, category_id: Number(event.target.value) })}
-            >
-              <option value="1">Nature</option>
-              <option value="2">Technology</option>
-              <option value="3">Education</option>
-              <option value="4">Documentary</option>
-            </select>
-          </label>
-          <label>
-            Playback type
-            <select
-              value={form.playback_type}
-              onChange={(event) =>
-                setForm({ ...form, playback_type: event.target.value as 'hls' | 'mp4' })
-              }
-            >
-              <option value="hls">HLS</option>
-              <option value="mp4">MP4</option>
-            </select>
-          </label>
-          <label>
-            Active
-            <select
-              value={String(form.is_active)}
-              onChange={(event) => setForm({ ...form, is_active: event.target.value === 'true' })}
-            >
-              <option value="true">Enabled</option>
-              <option value="false">Disabled</option>
-            </select>
-          </label>
-          <label>
-            Poster URL
-            <input
-              value={form.poster_url}
-              onChange={(event) => setForm({ ...form, poster_url: event.target.value })}
-            />
-          </label>
-          <label>
-            Backdrop URL
-            <input
-              value={form.backdrop_url}
-              onChange={(event) => setForm({ ...form, backdrop_url: event.target.value })}
-            />
-          </label>
-          <label className="wide">
-            Playback source
-            <input
-              value={form.playback_source}
-              onChange={(event) => setForm({ ...form, playback_source: event.target.value })}
-            />
-          </label>
+          <label>Title<input value={form.title} required onChange={(event) => setForm({ ...form, title: event.target.value, slug: event.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') })} /></label>
+          <label>Slug<input value={form.slug} required onChange={(event) => setForm({ ...form, slug: event.target.value })} /></label>
+          <label className="wide">Description<textarea value={form.description} required onChange={(event) => setForm({ ...form, description: event.target.value })} /></label>
+          <label>Year<input type="number" value={form.release_year} onChange={(event) => setForm({ ...form, release_year: Number(event.target.value) })} /></label>
+          <label>Duration seconds<input type="number" value={form.duration_seconds} onChange={(event) => setForm({ ...form, duration_seconds: Number(event.target.value) })} /></label>
+          <label>Category<select value={form.category_id} onChange={(event) => setForm({ ...form, category_id: Number(event.target.value) })}><option value="1">Nature</option><option value="2">Technology</option><option value="3">Education</option><option value="4">Documentary</option></select></label>
+          <label>Playback type<select value="hls" disabled><option value="hls">HLS</option></select></label>
+          <label>Active<select value={String(form.is_active)} onChange={(event) => setForm({ ...form, is_active: event.target.value === 'true' })}><option value="true">Enabled</option><option value="false">Disabled</option></select></label>
+          <label>Poster URL<input value={form.poster_url} onChange={(event) => setForm({ ...form, poster_url: event.target.value })} /></label>
+          <label>Backdrop URL<input value={form.backdrop_url} onChange={(event) => setForm({ ...form, backdrop_url: event.target.value })} /></label>
+          <label className="wide">HLS manifest URL<input value={form.playback_source} onChange={(event) => setForm({ ...form, playback_source: event.target.value })} /></label>
         </div>
         <button type="submit">{editing ? 'Save changes' : 'Create content'}</button>
       </form>
 
       <section className="panel">
-        <p className="eyebrow">Catalog</p>
-        <h2>All content</h2>
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Title</th>
-                <th>Category</th>
-                <th>Type</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((item) => (
-                <tr key={item.id}>
-                  <td>
-                    <strong>{item.title}</strong>
-                    <br />
-                    <small>{item.slug}</small>
-                  </td>
-                  <td>{item.category_name}</td>
-                  <td>{item.playback_type.toUpperCase()}</td>
-                  <td>
-                    <span className={`status ${item.is_active ? 'completed' : 'failed'}`}>
-                      {item.is_active ? 'active' : 'disabled'}
-                    </span>
-                  </td>
-                  <td>
-                    <button className="ghost" onClick={() => edit(item)}>
-                      Edit
-                    </button>{' '}
-                    <button className="danger" onClick={() => void remove(item.id)}>
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <p className="eyebrow">Catalog</p><h2>All content</h2>
+        <div className="table-wrap"><table><thead><tr><th>Title</th><th>Category</th><th>Type</th><th>Status</th><th>Actions</th></tr></thead><tbody>
+          {items.map((item) => <tr key={item.id}><td><strong>{item.title}</strong><br/><small>{item.slug}</small></td><td>{item.category_name}</td><td>HLS</td><td><span className={`status ${item.is_active ? 'completed' : 'failed'}`}>{item.is_active ? 'active' : 'disabled'}</span></td><td><button className="ghost" onClick={() => edit(item)}>Edit</button>{' '}<button className="danger" onClick={() => void remove(item.id)}>Delete</button></td></tr>)}
+        </tbody></table></div>
       </section>
     </div>
   );
