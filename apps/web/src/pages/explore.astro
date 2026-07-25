@@ -1,12 +1,71 @@
 ---
 import Layout from '../layouts/Layout.astro';
 ---
-<Layout title="Explore · StreamForge"><section class="page-section"><p class="eyebrow">Catalog</p><h1>Explore content</h1><div class="filter-bar"><input id="search" placeholder="Search titles or descriptions"/><select id="category"><option value="">All categories</option></select><select id="sort"><option value="recent">Recently added</option><option value="title">Title A–Z</option></select></div><p id="state" class="muted">Loading…</p><div id="results" class="card-grid"></div></section></Layout>
+<Layout title="Browse · StreamForge">
+  <section class="page-section page-shell">
+    <p class="eyebrow">Library</p>
+    <h1>Browse the catalog</h1>
+    <p class="muted">Search the demo library by title, description, or category.</p>
+    <div class="filter-bar">
+      <input id="search" placeholder="Search titles or descriptions" aria-label="Search catalog" />
+      <select id="category" aria-label="Filter by category"><option value="">All categories</option></select>
+      <select id="sort" aria-label="Sort catalog"><option value="recent">Recently added</option><option value="title">Title A–Z</option></select>
+    </div>
+    <p id="state" class="muted">Loading catalog…</p>
+    <div id="results" class="card-grid"></div>
+  </section>
+</Layout>
 <script>
-  const API=import.meta.env.PUBLIC_API_URL||'http://localhost:8080';
-  const search=document.querySelector('#search'),category=document.querySelector('#category'),sort=document.querySelector('#sort'),results=document.querySelector('#results'),state=document.querySelector('#state');
-  const escape=s=>String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
-  async function loadCategories(){const r=await fetch(`${API}/api/categories`);for(const c of await r.json())category.insertAdjacentHTML('beforeend',`<option value="${escape(c.slug)}">${escape(c.name)}</option>`)}
-  async function load(){state.textContent='Loading…';const p=new URLSearchParams({q:search.value,category:category.value,sort:sort.value});try{const r=await fetch(`${API}/api/content?${p}`);const items=await r.json();results.innerHTML=items.map(i=>`<a class="content-card" href="/content/${escape(i.slug)}"><img src="${escape(i.poster_url)}" alt=""><div class="card-copy"><h3>${escape(i.title)}</h3><p>${escape(i.category_name)} · ${i.release_year}</p></div></a>`).join('');state.textContent=items.length?`${items.length} result${items.length===1?'':'s'}`:'No content matched your search.'}catch{state.textContent='Could not load catalog.'}}
-  let timer;search.addEventListener('input',()=>{clearTimeout(timer);timer=setTimeout(load,250)});category.addEventListener('change',load);sort.addEventListener('change',load);loadCategories().then(load);
+  const API = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
+  const search = document.querySelector('#search');
+  const category = document.querySelector('#category');
+  const sort = document.querySelector('#sort');
+  const results = document.querySelector('#results');
+  const state = document.querySelector('#state');
+  const escape = value => String(value).replace(/[&<>'"]/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[character]));
+
+  async function loadCategories() {
+    try {
+      const response = await fetch(`${API}/api/categories`);
+      if (!response.ok) throw new Error();
+      for (const item of await response.json()) {
+        category.insertAdjacentHTML('beforeend', `<option value="${escape(item.slug)}">${escape(item.name)}</option>`);
+      }
+    } catch {
+      // Catalog still works without category options.
+    }
+  }
+
+  async function load() {
+    state.textContent = 'Loading catalog…';
+    results.innerHTML = '';
+    const params = new URLSearchParams({ q: search.value, category: category.value, sort: sort.value });
+    try {
+      const response = await fetch(`${API}/api/content?${params}`);
+      if (!response.ok) throw new Error();
+      const items = await response.json();
+      results.innerHTML = items.map(item => `
+        <a class="content-card" href="/content/${escape(item.slug)}">
+          <div class="poster-wrap">
+            <img src="${escape(item.poster_url)}" alt="${escape(item.title)} poster">
+            <span class="card-overlay" aria-hidden="true">▶</span>
+          </div>
+          <div class="card-copy">
+            <h3>${escape(item.title)}</h3>
+            <p>${escape(item.category_name)} · ${item.release_year} · ${Math.round(item.duration_seconds / 60)} min</p>
+          </div>
+        </a>`).join('');
+      state.textContent = items.length ? `${items.length} title${items.length === 1 ? '' : 's'}` : 'No titles match these filters.';
+      if (!items.length) results.innerHTML = '<div class="empty-state"><div><strong>No matches found</strong><span>Try another search or clear the category filter.</span></div></div>';
+    } catch {
+      state.textContent = '';
+      results.innerHTML = '<div class="error-state"><div><strong>Catalog could not be loaded</strong><span>Confirm that the API is running on port 8080, then refresh.</span></div></div>';
+    }
+  }
+
+  let timer;
+  search.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(load, 250); });
+  category.addEventListener('change', load);
+  sort.addEventListener('change', load);
+  loadCategories().then(load);
 </script>
