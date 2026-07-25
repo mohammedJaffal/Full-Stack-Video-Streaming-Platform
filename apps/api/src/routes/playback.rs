@@ -1,16 +1,24 @@
 use axum::{extract::{Path, State}, http::StatusCode, Json};
-use chrono::{Duration, Utc};
+use chrono::{Duration, NaiveDateTime, Utc};
 use jsonwebtoken::{encode, EncodingKey, Header};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use uuid::Uuid;
 use crate::{auth::PlaybackClaims, error::AppError, models::{PlaybackRequest, PlaybackResponse, Subtitle}, state::AppState};
 
+fn ensure_active(active: bool) -> Result<(), AppError> {
+    if active { Ok(()) } else { Err(AppError(StatusCode::FORBIDDEN, "content is inactive".into())) }
+}
+
+fn session_is_valid(expires_at: NaiveDateTime, now: NaiveDateTime) -> bool {
+    expires_at > now
+}
+
 pub async fn create(State(state): State<AppState>, Json(body): Json<PlaybackRequest>) -> Result<Json<PlaybackResponse>, AppError> {
     let row: Option<(String, bool)> = sqlx::query_as("SELECT playback_source, is_active FROM content WHERE id = ? LIMIT 1")
         .bind(body.content_id).fetch_optional(&state.db).await?;
     let (source, active) = row.ok_or_else(|| AppError(StatusCode::NOT_FOUND, "content not found".into()))?;
-    if !active { return Err(AppError(StatusCode::FORBIDDEN, "content is inactive".into())); }
+    ensure_active(active)?;
 
     let now = Utc::now();
     let expires = now + Duration::seconds(state.config.playback_ttl_seconds);
@@ -34,6 +42,23 @@ pub async fn create(State(state): State<AppState>, Json(body): Json<PlaybackRequ
 pub async fn status(State(state): State<AppState>, Path(id): Path<String>) -> Result<Json<Value>, AppError> {
     let row: Option<(chrono::NaiveDateTime,)> = sqlx::query_as("SELECT expires_at FROM playback_sessions WHERE id = ? LIMIT 1").bind(&id).fetch_optional(&state.db).await?;
     let (expires_at,) = row.ok_or_else(|| AppError(StatusCode::NOT_FOUND, "session not found".into()))?;
-    let valid = expires_at > Utc::now().naive_utc();
+    let valid = session_is_valid(expires_at, Utc::now().naive_utc());
     Ok(Json(json!({ "id": id, "valid": valid, "expires_at": expires_at })))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn inactive_content_cannot_create_playback_session() {
+        let error = ensure_active(false).unwrap_err();
+        assert_eq!(error.0, StatusCode::FORBIDDEN);
+    }
+
+    #[test]
+    fn expired_playback_session_is_rejected() {
+        let now = Utc::now().naive_utc();
+        assert!(!session_is_valid(now - Duration::seconds(1), now));
+    }
 }

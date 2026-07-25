@@ -18,6 +18,7 @@ async fn main() {
     let db = MySqlPoolOptions::new().max_connections(10).connect(&config.database_url).await.expect("database connection failed");
     let redis = redis::Client::open(config.redis_url.clone()).expect("invalid REDIS_URL");
     let state = AppState { db, redis, config: config.clone() };
+    let allowed_origin = HeaderValue::from_str(&config.allowed_origin).expect("ALLOWED_ORIGIN must be a valid origin");
 
     let app = Router::new()
         .route("/health", get(|| async { "ok" }))
@@ -39,7 +40,7 @@ async fn main() {
         .route("/api/admin/providers", get(routes::admin::providers))
         .route("/api/admin/logs", get(routes::admin::logs))
         .layer(TraceLayer::new_for_http())
-        .layer(CorsLayer::new().allow_origin(HeaderValue::from_static("*")).allow_methods([Method::GET,Method::POST,Method::PUT,Method::DELETE,Method::OPTIONS]).allow_headers(tower_http::cors::Any))
+        .layer(CorsLayer::new().allow_origin(allowed_origin).allow_methods([Method::GET,Method::POST,Method::PUT,Method::DELETE,Method::OPTIONS]).allow_headers(tower_http::cors::Any))
         .with_state(state);
 
     let listener = tokio::net::TcpListener::bind(&config.bind).await.expect("bind failed");

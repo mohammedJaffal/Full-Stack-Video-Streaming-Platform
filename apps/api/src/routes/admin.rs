@@ -2,11 +2,11 @@ use axum::{extract::{Path, State}, http::StatusCode, Json};
 use redis::AsyncCommands;
 use serde_json::{json, Value};
 use uuid::Uuid;
-use crate::{auth::AuthClaims, error::AppError, models::{AdminContentInput, ContentSummary, Job, JobInput, ProviderHealth, SystemLog}, state::AppState};
+use crate::{auth::AuthClaims, error::AppError, models::{AdminContentInput, AdminContentItem, Job, JobInput, ProviderHealth, SystemLog}, state::AppState};
 
-const CONTENT_SELECT: &str = r#"SELECT c.id, c.title, c.slug, c.description, c.release_year, c.duration_seconds,
-c.poster_url, c.backdrop_url, c.category_id, cat.name AS category_name, c.playback_type, c.is_active, c.created_at
-FROM content c JOIN categories cat ON cat.id = c.category_id"#;
+const ADMIN_CONTENT_SELECT: &str = r#"SELECT c.id, c.title, c.slug, c.description, c.release_year, c.duration_seconds,
+c.poster_url, c.backdrop_url, c.category_id, cat.name AS category_name, c.playback_source,
+c.playback_type, c.is_active, c.created_at FROM content c JOIN categories cat ON cat.id = c.category_id"#;
 
 pub async fn dashboard(_: AuthClaims, State(state): State<AppState>) -> Result<Json<Value>, AppError> {
     let (total,): (i64,) = sqlx::query_as("SELECT COUNT(*) FROM content").fetch_one(&state.db).await?;
@@ -16,8 +16,8 @@ pub async fn dashboard(_: AuthClaims, State(state): State<AppState>) -> Result<J
     Ok(Json(json!({"total_content": total, "active_jobs": queued, "completed_jobs": completed, "failed_jobs": failed})))
 }
 
-pub async fn list_content(_: AuthClaims, State(state): State<AppState>) -> Result<Json<Vec<ContentSummary>>, AppError> {
-    Ok(Json(sqlx::query_as::<_, ContentSummary>(&format!("{CONTENT_SELECT} ORDER BY c.created_at DESC")).fetch_all(&state.db).await?))
+pub async fn list_content(_: AuthClaims, State(state): State<AppState>) -> Result<Json<Vec<AdminContentItem>>, AppError> {
+    Ok(Json(sqlx::query_as::<_, AdminContentItem>(&format!("{ADMIN_CONTENT_SELECT} ORDER BY c.created_at DESC")).fetch_all(&state.db).await?))
 }
 
 pub async fn create_content(_: AuthClaims, State(state): State<AppState>, Json(i): Json<AdminContentInput>) -> Result<(StatusCode, Json<Value>), AppError> {
@@ -48,9 +48,7 @@ pub async fn jobs(_: AuthClaims, State(state): State<AppState>) -> Result<Json<V
 }
 
 pub async fn create_job(_: AuthClaims, State(state): State<AppState>, Json(i): Json<JobInput>) -> Result<(StatusCode, Json<Value>), AppError> {
-    if !matches!(i.job_type.as_str(), "metadata_enrichment" | "subtitle_import" | "duplicate_detection") {
-        return Err(AppError(StatusCode::BAD_REQUEST, "unsupported job type".into()));
-    }
+    if !matches!(i.job_type.as_str(), "metadata_enrichment" | "subtitle_import" | "duplicate_detection") { return Err(AppError(StatusCode::BAD_REQUEST, "unsupported job type".into())); }
     let id = Uuid::new_v4().to_string();
     sqlx::query("INSERT INTO ingestion_jobs (id,job_type,content_id,payload,status,progress,log_message) VALUES (?,?,?,?, 'queued',0,'Waiting for worker')")
         .bind(&id).bind(&i.job_type).bind(i.content_id).bind(i.payload).execute(&state.db).await?;

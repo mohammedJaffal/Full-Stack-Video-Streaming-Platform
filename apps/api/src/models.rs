@@ -16,6 +16,15 @@ pub struct ContentSummary {
     pub playback_type: String, pub is_active: bool, pub created_at: NaiveDateTime,
 }
 
+#[derive(Debug, Serialize, FromRow)]
+pub struct AdminContentItem {
+    pub id: u64, pub title: String, pub slug: String, pub description: String,
+    pub release_year: u16, pub duration_seconds: u32, pub poster_url: String,
+    pub backdrop_url: String, pub category_id: u64, pub category_name: String,
+    pub playback_source: String, pub playback_type: String, pub is_active: bool,
+    pub created_at: NaiveDateTime,
+}
+
 #[derive(Debug, Serialize)]
 pub struct ContentDetails { #[serde(flatten)] pub content: ContentSummary, pub subtitles: Vec<Subtitle>, pub related: Vec<ContentSummary> }
 
