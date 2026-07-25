@@ -6,6 +6,34 @@ type Job = { id: string; job_type: string; content_id?: number; status: string; 
 type Provider = { id: number; provider_name: string; status: string; response_time_ms?: number; message: string; last_checked_at: string };
 type Log = { id: number; level: string; source: string; message: string; created_at: string };
 
+type MetricCardProps = {
+  value: number | string;
+  label: string;
+  icon: 'library' | 'bolt' | 'check' | 'alert';
+};
+
+function MetricCard({ value, label, icon }: MetricCardProps) {
+  const numericValue = typeof value === 'number' ? value : null;
+  const zero = numericValue === 0;
+  const icons = {
+    library: <><rect x="4" y="5" width="16" height="14" rx="2" /><path d="M8 9h8M8 13h5" /></>,
+    bolt: <path d="m13 2-7 11h6l-1 9 7-12h-6z" />,
+    check: <><circle cx="12" cy="12" r="9" /><path d="m8 12 2.5 2.5L16 9" /></>,
+    alert: <><path d="M12 4 3.5 19h17z" /><path d="M12 9v4M12 16h.01" /></>,
+  };
+
+  return (
+    <article className={`metric-card ${zero ? 'is-zero' : ''}`}>
+      <span className="metric-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none">{icons[icon]}</svg></span>
+      <strong>{value}</strong>
+      <span>{label}</span>
+      <svg className="metric-sparkline" viewBox="0 0 100 32" preserveAspectRatio="none" aria-hidden="true">
+        <path d={zero ? 'M0 23 L100 23' : 'M0 26 C18 25 22 17 38 20 S62 9 78 15 S92 7 100 10'} />
+      </svg>
+    </article>
+  );
+}
+
 export default function AdminApp() {
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -70,10 +98,10 @@ export default function AdminApp() {
       )}
 
       <section className="metric-grid">
-        <article><strong>{dashboard?.total_content ?? '—'}</strong><span>Content items</span></article>
-        <article><strong>{dashboard?.active_jobs ?? '—'}</strong><span>Active jobs</span></article>
-        <article><strong>{dashboard?.completed_jobs ?? '—'}</strong><span>Completed jobs</span></article>
-        <article><strong>{dashboard?.failed_jobs ?? '—'}</strong><span>Failed jobs</span></article>
+        <MetricCard value={dashboard?.total_content ?? '—'} label="Content items" icon="library" />
+        <MetricCard value={dashboard?.active_jobs ?? '—'} label="Active jobs" icon="bolt" />
+        <MetricCard value={dashboard?.completed_jobs ?? '—'} label="Completed jobs" icon="check" />
+        <MetricCard value={dashboard?.failed_jobs ?? '—'} label="Failed jobs" icon="alert" />
       </section>
 
       <section className="panel">
@@ -88,7 +116,14 @@ export default function AdminApp() {
         {jobs.length ? (
           <div className="table-wrap"><table><thead><tr><th>Type</th><th>Status</th><th>Progress</th><th>Latest update</th><th></th></tr></thead><tbody>{jobs.map(job => <tr key={job.id}><td>{job.job_type.replaceAll('_', ' ')}</td><td><span className={`status ${job.status}`}>{job.status}</span></td><td>{job.progress}%</td><td>{job.error_message || job.log_message || '—'}</td><td>{job.status === 'failed' && <button className="ghost" onClick={() => void retry(job.id)}>Retry</button>}</td></tr>)}</tbody></table></div>
         ) : (
-          <div className="empty-state"><div><strong>No jobs yet</strong><span>Run a demo action to show the queue lifecycle.</span></div></div>
+          <div className="empty-state">
+            <div>
+              <span className="empty-state-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M7 7h10M7 12h7M7 17h4" /><rect x="3" y="3" width="18" height="18" rx="3" /></svg></span>
+              <strong>No jobs yet</strong>
+              <span>Run a demo action to show the queue lifecycle from queued to completed.</span>
+              <div className="empty-state-actions"><button onClick={() => void createJob('metadata_enrichment')}>Run a demo job</button></div>
+            </div>
+          </div>
         )}
       </section>
 

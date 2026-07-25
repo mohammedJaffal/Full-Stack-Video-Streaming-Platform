@@ -12,7 +12,7 @@ import Layout from '../layouts/Layout.astro';
       <select id="sort" aria-label="Sort catalog"><option value="recent">Recently added</option><option value="title">Title A–Z</option></select>
     </div>
     <p id="state" class="muted">Loading catalog…</p>
-    <div id="results" class="card-grid"></div>
+    <div id="results" class="catalog-grid"></div>
   </section>
 </Layout>
 <script>
@@ -55,8 +55,16 @@ import Layout from '../layouts/Layout.astro';
             <p>${escape(item.category_name)} · ${item.release_year} · ${Math.round(item.duration_seconds / 60)} min</p>
           </div>
         </a>`).join('');
-      state.textContent = items.length ? `${items.length} title${items.length === 1 ? '' : 's'}` : 'No titles match these filters.';
-      if (!items.length) results.innerHTML = '<div class="empty-state"><div><strong>No matches found</strong><span>Try another search or clear the category filter.</span></div></div>';
+      state.textContent = items.length ? `${items.length} title${items.length === 1 ? '' : 's'}` : '';
+      if (!items.length) {
+        results.innerHTML = '<div class="empty-state"><div><span class="empty-state-icon"><svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="6"></circle><path d="m16 16 4 4"></path></svg></span><strong>No matches found</strong><span>Try another search or clear the category filter.</span><div class="empty-state-actions"><button id="clearFilters" class="ghost">Clear filters</button></div></div></div>';
+        document.querySelector('#clearFilters')?.addEventListener('click', () => {
+          search.value = '';
+          category.value = '';
+          sort.value = 'recent';
+          load();
+        });
+      }
     } catch {
       state.textContent = '';
       results.innerHTML = '<div class="error-state"><div><strong>Catalog could not be loaded</strong><span>Confirm that the API is running on port 8080, then refresh.</span></div></div>';
