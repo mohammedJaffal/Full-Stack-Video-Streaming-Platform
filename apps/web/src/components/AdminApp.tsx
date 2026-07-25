@@ -13,8 +13,6 @@ type MetricCardProps = {
 };
 
 function MetricCard({ value, label, icon }: MetricCardProps) {
-  const numericValue = typeof value === 'number' ? value : null;
-  const zero = numericValue === 0;
   const icons = {
     library: <><rect x="4" y="5" width="16" height="14" rx="2" /><path d="M8 9h8M8 13h5" /></>,
     bolt: <path d="m13 2-7 11h6l-1 9 7-12h-6z" />,
@@ -23,13 +21,10 @@ function MetricCard({ value, label, icon }: MetricCardProps) {
   };
 
   return (
-    <article className={`metric-card ${zero ? 'is-zero' : ''}`}>
+    <article className="metric-card">
       <span className="metric-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none">{icons[icon]}</svg></span>
       <strong>{value}</strong>
       <span>{label}</span>
-      <svg className="metric-sparkline" viewBox="0 0 100 32" preserveAspectRatio="none" aria-hidden="true">
-        <path d={zero ? 'M0 23 L100 23' : 'M0 26 C18 25 22 17 38 20 S62 9 78 15 S92 7 100 10'} />
-      </svg>
     </article>
   );
 }
@@ -91,11 +86,7 @@ export default function AdminApp() {
 
   return (
     <div className="admin-grid">
-      {error && (
-        <div className="error-state">
-          <div><strong>Some operational data is unavailable</strong><span>{error}</span></div>
-        </div>
-      )}
+      {error && <div className="error-state"><div><strong>Some operational data is unavailable</strong><span>{error}</span></div></div>}
 
       <section className="metric-grid">
         <MetricCard value={dashboard?.total_content ?? '—'} label="Content items" icon="library" />
@@ -116,14 +107,7 @@ export default function AdminApp() {
         {jobs.length ? (
           <div className="table-wrap"><table><thead><tr><th>Type</th><th>Status</th><th>Progress</th><th>Latest update</th><th></th></tr></thead><tbody>{jobs.map(job => <tr key={job.id}><td>{job.job_type.replaceAll('_', ' ')}</td><td><span className={`status ${job.status}`}>{job.status}</span></td><td>{job.progress}%</td><td>{job.error_message || job.log_message || '—'}</td><td>{job.status === 'failed' && <button className="ghost" onClick={() => void retry(job.id)}>Retry</button>}</td></tr>)}</tbody></table></div>
         ) : (
-          <div className="empty-state">
-            <div>
-              <span className="empty-state-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M7 7h10M7 12h7M7 17h4" /><rect x="3" y="3" width="18" height="18" rx="3" /></svg></span>
-              <strong>No jobs yet</strong>
-              <span>Run a demo action to show the queue lifecycle from queued to completed.</span>
-              <div className="empty-state-actions"><button onClick={() => void createJob('metadata_enrichment')}>Run a demo job</button></div>
-            </div>
-          </div>
+          <div className="empty-state"><div><strong>No jobs yet</strong><span>Start a metadata, subtitle, or duplicate-check job to populate the queue.</span><div className="empty-state-actions"><button onClick={() => void createJob('metadata_enrichment')}>Run metadata enrichment</button></div></div></div>
         )}
       </section>
 
