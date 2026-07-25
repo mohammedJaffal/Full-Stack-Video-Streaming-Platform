@@ -53,7 +53,6 @@ import Layout from '../layouts/Layout.astro';
           <div class="card-copy">
             <h3>${escape(item.title)}</h3>
             <p>${escape(item.category_name)} · ${item.release_year} · ${Math.round(item.duration_seconds / 60)} min</p>
-            ${index === 0 ? `<p class="featured-description">${escape(item.description)}</p>` : ''}
           </div>
         </a>`).join('');
       state.textContent = items.length ? `${items.length} title${items.length === 1 ? '' : 's'}` : '';
