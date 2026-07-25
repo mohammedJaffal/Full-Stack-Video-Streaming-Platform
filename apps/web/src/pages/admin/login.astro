@@ -5,12 +5,12 @@ import Layout from '../../layouts/Layout.astro';
   <section class="login-wrap">
     <form id="login" class="panel login-panel">
       <p class="eyebrow">StreamForge Studio</p>
-      <h1>Manage the platform.</h1>
-      <p class="muted">Use the local demo administrator account to review content, jobs, providers, and logs.</p>
+      <h1>Sign in</h1>
+      <p class="muted">Access catalog management, jobs, provider health, and logs.</p>
       <label>Email<input name="email" type="email" value="admin@example.com" autocomplete="username" required /></label>
       <label>Password<input name="password" type="password" value="demo12345" autocomplete="current-password" required /></label>
       <p id="error" class="error-text" role="alert"></p>
-      <button type="submit">Continue to studio</button>
+      <button type="submit">Continue</button>
     </form>
   </section>
 </Layout>
@@ -26,11 +26,7 @@ import Layout from '../../layouts/Layout.astro';
     button.textContent = 'Signing in…';
     try {
       const data = Object.fromEntries(new FormData(form));
-      const response = await fetch(`${API}/api/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
+      const response = await fetch(`${API}/api/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || 'Login failed');
       localStorage.setItem('admin_token', body.token);
@@ -38,7 +34,7 @@ import Layout from '../../layouts/Layout.astro';
     } catch (reason) {
       error.textContent = reason instanceof Error ? reason.message : 'Could not sign in';
       button.disabled = false;
-      button.textContent = 'Continue to studio';
+      button.textContent = 'Continue';
     }
   });
 </script>
