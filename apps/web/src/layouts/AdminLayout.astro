@@ -1,0 +1,39 @@
+---
+import '../styles/global.css';
+import '../styles/editorial.css';
+const { title = 'StreamForge Studio', active = 'overview' } = Astro.props;
+const links = [
+  { href: '/admin', label: 'Overview', key: 'overview' },
+  { href: '/admin/content', label: 'Catalog', key: 'catalog' },
+];
+---
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width" />
+  <meta name="description" content="StreamForge administration" />
+  <title>{title}</title>
+</head>
+<body class="admin-body">
+  <div class="admin-shell">
+    <aside class="admin-sidebar">
+      <a class="admin-brand" href="/admin"><span>SF</span><div><strong>StreamForge</strong><small>Studio</small></div></a>
+      <nav aria-label="Studio navigation">
+        {links.map(link => <a class={active === link.key ? 'active' : ''} href={link.href}>{link.label}</a>)}
+      </nav>
+      <div class="admin-sidebar-footer">
+        <a href="/">Back to site</a>
+        <button id="adminLogout" type="button">Log out</button>
+      </div>
+    </aside>
+    <main class="admin-main"><slot /></main>
+  </div>
+  <script>
+    document.querySelector('#adminLogout')?.addEventListener('click', () => {
+      localStorage.removeItem('admin_token');
+      location.href = '/admin/login';
+    });
+  </script>
+</body>
+</html>
