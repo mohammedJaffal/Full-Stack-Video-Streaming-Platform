@@ -1,21 +1,44 @@
-import Hls from 'hls.js';
-import { useEffect, useRef, useState } from 'react';
+import '@vidstack/react/player/styles/default/theme.css';
+import '@vidstack/react/player/styles/default/layouts/video.css';
+
+import { MediaPlayer, MediaProvider, Poster, Track } from '@vidstack/react';
+import { defaultLayoutIcons, DefaultVideoLayout } from '@vidstack/react/player/layouts/default';
+import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 
-type Subtitle = { id: number; label: string; language_code: string; file_url: string; is_default: boolean };
-type Playback = { manifest_url: string; expires_at: string; subtitles: Subtitle[] };
+type Subtitle = {
+  id: number;
+  label: string;
+  language_code: string;
+  file_url: string;
+  format: string;
+  is_default: boolean;
+};
 
-export default function VideoPlayer({ contentId, poster }: { contentId: number; poster: string }) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const hlsRef = useRef<Hls | null>(null);
+type Playback = {
+  manifest_url: string;
+  expires_at: string;
+  subtitles: Subtitle[];
+};
+
+type VideoPlayerProps = {
+  contentId: number;
+  poster: string;
+  title: string;
+};
+
+export default function VideoPlayer({ contentId, poster, title }: VideoPlayerProps) {
   const [playback, setPlayback] = useState<Playback | null>(null);
-  const [levels, setLevels] = useState<{ index: number; label: string }[]>([]);
-  const [quality, setQuality] = useState(-1);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
+
+    setLoading(true);
+    setError('');
+    setPlayback(null);
+
     api<Playback>('/api/playback/session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -36,50 +59,22 @@ export default function VideoPlayer({ contentId, poster }: { contentId: number; 
     };
   }, [contentId]);
 
-  useEffect(() => {
-    if (!playback || !videoRef.current) return;
-    const video = videoRef.current;
-
-    if (Hls.isSupported()) {
-      const hls = new Hls({ enableWorker: true, lowLatencyMode: false });
-      hlsRef.current = hls;
-      hls.loadSource(playback.manifest_url);
-      hls.attachMedia(video);
-      hls.on(Hls.Events.MANIFEST_PARSED, (_, data) => {
-        setLevels(data.levels.map((level, index) => ({
-          index,
-          label: level.height ? `${level.height}p` : `Level ${index + 1}`,
-        })));
-      });
-      hls.on(Hls.Events.ERROR, (_, data) => {
-        if (data.fatal) setError('This stream is temporarily unavailable.');
-      });
-      return () => hls.destroy();
-    }
-
-    if (video.canPlayType('application/vnd.apple.mpegurl')) {
-      video.src = playback.manifest_url;
-    } else {
-      setError('This browser cannot play this stream right now.');
-    }
-  }, [playback]);
-
-  const changeQuality = (value: number) => {
-    setQuality(value);
-    if (hlsRef.current) hlsRef.current.currentLevel = value;
-  };
-
   if (loading) {
-    return <div className="player-state">Creating a secure playback session…</div>;
+    return (
+      <section className="player-state player-loading-state" aria-live="polite">
+        <span className="player-spinner" aria-hidden="true" />
+        <p>Creating a secure playback session…</p>
+      </section>
+    );
   }
 
-  if (error) {
+  if (error || !playback) {
     return (
       <section className="player-state player-error-state" style={{ backgroundImage: `url(${poster})` }}>
         <div className="player-error-copy">
           <p className="eyebrow">Playback unavailable</p>
           <h2>We could not start this stream.</h2>
-          <p>{error} Try again in a moment or return to the catalog.</p>
+          <p>{error || 'The playback session could not be created.'} Try again in a moment or return to the catalog.</p>
           <div className="actions">
             <button type="button" onClick={() => location.reload()}>Try again</button>
             <a className="button ghost" href="/explore">Return to catalog</a>
@@ -90,48 +85,40 @@ export default function VideoPlayer({ contentId, poster }: { contentId: number; 
   }
 
   return (
-    <section className="player-shell">
-      <video ref={videoRef} controls poster={poster} crossOrigin="anonymous">
-        {playback?.subtitles.map(track => (
-          <track
-            key={track.id}
-            kind="subtitles"
-            src={track.file_url}
-            srcLang={track.language_code}
-            label={track.label}
-            default={track.is_default}
-          />
-        ))}
-      </video>
-      <div className="player-toolbar">
-        <label>
-          Quality
-          <select value={quality} onChange={event => changeQuality(Number(event.target.value))}>
-            <option value={-1}>Auto</option>
-            {levels.map(level => (
-              <option key={level.index} value={level.index}>{level.label}</option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Speed
-          <select
-            defaultValue="1"
-            onChange={event => {
-              if (videoRef.current) videoRef.current.playbackRate = Number(event.target.value);
-            }}
-          >
-            <option value="0.75">0.75×</option>
-            <option value="1">1×</option>
-            <option value="1.25">1.25×</option>
-            <option value="1.5">1.5×</option>
-            <option value="2">2×</option>
-          </select>
-        </label>
-        <span className="secure-badge">
-          Protected session · expires {playback ? new Date(playback.expires_at).toLocaleTimeString() : ''}
-        </span>
-      </div>
+    <section className="player-shell vidstack-shell">
+      <MediaPlayer
+        className="streamforge-player"
+        title={title}
+        src={{ src: playback.manifest_url, type: 'application/x-mpegurl' }}
+        playsInline
+        crossOrigin
+        aspectRatio="16/9"
+        controlsDelay={3500}
+        hideControlsOnMouseLeave={false}
+        onError={() => setError('This stream is temporarily unavailable.')}
+      >
+        <MediaProvider>
+          <Poster className="vds-poster" src={poster} alt={`${title} poster`} />
+          {playback.subtitles.map(track => (
+            <Track
+              key={track.id}
+              src={track.file_url}
+              kind="subtitles"
+              label={track.label}
+              lang={track.language_code}
+              type={track.format || 'vtt'}
+              default={track.is_default}
+            />
+          ))}
+        </MediaProvider>
+
+        <div className="protected-stream-badge" aria-label="Signed protected playback session">
+          <span aria-hidden="true">⌁</span>
+          Protected stream
+        </div>
+
+        <DefaultVideoLayout colorScheme="dark" icons={defaultLayoutIcons} />
+      </MediaPlayer>
     </section>
   );
 }

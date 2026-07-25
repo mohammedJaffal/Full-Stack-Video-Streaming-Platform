@@ -26,6 +26,7 @@ if (!data) return Astro.redirect('/404');
       client:load
       contentId={data.content.id}
       poster={data.content.backdrop_url}
+      title={data.content.title}
     />
     <div class="watch-copy">
       <p class="eyebrow">Now playing</p>
