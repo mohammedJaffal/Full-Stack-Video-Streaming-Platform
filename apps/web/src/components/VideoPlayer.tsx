@@ -117,7 +117,11 @@ export default function VideoPlayer({ contentId, poster, title }: VideoPlayerPro
           Protected stream
         </div>
 
-        <DefaultVideoLayout colorScheme="dark" icons={defaultLayoutIcons} />
+        <DefaultVideoLayout
+          colorScheme="dark"
+          icons={defaultLayoutIcons}
+          noAudioGain
+        />
       </MediaPlayer>
     </section>
   );
