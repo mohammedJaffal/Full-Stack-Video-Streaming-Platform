@@ -2,10 +2,10 @@
 import Layout from '../layouts/Layout.astro';
 ---
 <Layout title="Browse · StreamForge">
-  <section class="page-section page-shell">
-    <p class="eyebrow">Library</p>
-    <h1>Browse the catalog</h1>
-    <p class="muted">Search the demo library by title, description, or category.</p>
+  <section class="page-section page-shell browse-page">
+    <div class="browse-heading">
+      <div><p class="eyebrow">Library</p><h1>Browse</h1><p class="muted">Find titles by name, description, or category.</p></div>
+    </div>
     <div class="filter-bar">
       <input id="search" placeholder="Search titles or descriptions" aria-label="Search catalog" />
       <select id="category" aria-label="Filter by category"><option value="">All categories</option></select>
@@ -28,12 +28,8 @@ import Layout from '../layouts/Layout.astro';
     try {
       const response = await fetch(`${API}/api/categories`);
       if (!response.ok) throw new Error();
-      for (const item of await response.json()) {
-        category.insertAdjacentHTML('beforeend', `<option value="${escape(item.slug)}">${escape(item.name)}</option>`);
-      }
-    } catch {
-      // Catalog still works without category options.
-    }
+      for (const item of await response.json()) category.insertAdjacentHTML('beforeend', `<option value="${escape(item.slug)}">${escape(item.name)}</option>`);
+    } catch {}
   }
 
   async function load() {
@@ -44,30 +40,19 @@ import Layout from '../layouts/Layout.astro';
       const response = await fetch(`${API}/api/content?${params}`);
       if (!response.ok) throw new Error();
       const items = await response.json();
-      results.innerHTML = items.map((item, index) => `
-        <a class="content-card ${index === 0 ? 'featured-card' : ''}" href="/content/${escape(item.slug)}">
-          <div class="poster-wrap">
-            <img src="${escape(item.poster_url)}" alt="${escape(item.title)} poster">
-            <span class="card-overlay" aria-hidden="true">▶</span>
-          </div>
-          <div class="card-copy">
-            <h3>${escape(item.title)}</h3>
-            <p>${escape(item.category_name)} · ${item.release_year} · ${Math.round(item.duration_seconds / 60)} min</p>
-          </div>
+      results.innerHTML = items.map(item => `
+        <a class="content-card" href="/content/${escape(item.slug)}">
+          <div class="poster-wrap"><img src="${escape(item.poster_url)}" alt="${escape(item.title)} poster"><span class="card-overlay" aria-hidden="true">▶</span></div>
+          <div class="card-copy"><h3>${escape(item.title)}</h3><p>${escape(item.category_name)} · ${item.release_year} · ${Math.round(item.duration_seconds / 60)} min</p></div>
         </a>`).join('');
       state.textContent = items.length ? `${items.length} title${items.length === 1 ? '' : 's'}` : '';
       if (!items.length) {
-        results.innerHTML = '<div class="empty-state"><div><span class="empty-state-icon"><svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="6"></circle><path d="m16 16 4 4"></path></svg></span><strong>No matches found</strong><span>Try another search or clear the category filter.</span><div class="empty-state-actions"><button id="clearFilters" class="ghost">Clear filters</button></div></div></div>';
-        document.querySelector('#clearFilters')?.addEventListener('click', () => {
-          search.value = '';
-          category.value = '';
-          sort.value = 'recent';
-          load();
-        });
+        results.innerHTML = '<div class="empty-state"><div><strong>No matches found</strong><span>Try another search or clear the filters.</span><div class="empty-state-actions"><button id="clearFilters" class="ghost">Clear filters</button></div></div></div>';
+        document.querySelector('#clearFilters')?.addEventListener('click', () => { search.value = ''; category.value = ''; sort.value = 'recent'; load(); });
       }
     } catch {
       state.textContent = '';
-      results.innerHTML = '<div class="error-state"><div><strong>Catalog could not be loaded</strong><span>Confirm that the API is running on port 8080, then refresh.</span></div></div>';
+      results.innerHTML = '<div class="error-state"><div><strong>Catalog could not be loaded</strong><span>Check the API connection and refresh the page.</span></div></div>';
     }
   }
 
