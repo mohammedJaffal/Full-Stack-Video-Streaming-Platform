@@ -95,11 +95,11 @@ pub async fn details(
     .await?;
 
     let related_sql = format!(
-        "{CONTENT_SELECT} WHERE c.category_id = ? AND c.id <> ? AND c.is_active = TRUE ORDER BY c.created_at DESC LIMIT 4"
+        "{CONTENT_SELECT} WHERE c.id <> ? AND c.is_active = TRUE ORDER BY (c.category_id = ?) DESC, c.created_at DESC LIMIT 4"
     );
     let related = sqlx::query_as::<_, ContentSummary>(&related_sql)
-        .bind(content.category_id)
         .bind(content.id)
+        .bind(content.category_id)
         .fetch_all(&state.db)
         .await?;
 
