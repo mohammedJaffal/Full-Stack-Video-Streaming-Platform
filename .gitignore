@@ -17,11 +17,6 @@ dist
 .vscode
 .idea
 
+# Cloudflare local development
 cloudflare/media-relay/.dev.vars
-.env
-cloudflare/media-relay/.dev.vars
-
-.env
-cloudflare/media-relay/.dev.vars
-
 cloudflare/media-relay/.wrangler/
