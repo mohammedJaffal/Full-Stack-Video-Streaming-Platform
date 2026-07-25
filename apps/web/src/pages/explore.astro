@@ -1,0 +1,12 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+<Layout title="Explore · StreamForge"><section class="page-section"><p class="eyebrow">Catalog</p><h1>Explore content</h1><div class="filter-bar"><input id="search" placeholder="Search titles or descriptions"/><select id="category"><option value="">All categories</option></select><select id="sort"><option value="recent">Recently added</option><option value="title">Title A–Z</option></select></div><p id="state" class="muted">Loading…</p><div id="results" class="card-grid"></div></section></Layout>
+<script>
+  const API=import.meta.env.PUBLIC_API_URL||'http://localhost:8080';
+  const search=document.querySelector('#search'),category=document.querySelector('#category'),sort=document.querySelector('#sort'),results=document.querySelector('#results'),state=document.querySelector('#state');
+  const escape=s=>String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+  async function loadCategories(){const r=await fetch(`${API}/api/categories`);for(const c of await r.json())category.insertAdjacentHTML('beforeend',`<option value="${escape(c.slug)}">${escape(c.name)}</option>`)}
+  async function load(){state.textContent='Loading…';const p=new URLSearchParams({q:search.value,category:category.value,sort:sort.value});try{const r=await fetch(`${API}/api/content?${p}`);const items=await r.json();results.innerHTML=items.map(i=>`<a class="content-card" href="/content/${escape(i.slug)}"><img src="${escape(i.poster_url)}" alt=""><div class="card-copy"><h3>${escape(i.title)}</h3><p>${escape(i.category_name)} · ${i.release_year}</p></div></a>`).join('');state.textContent=items.length?`${items.length} result${items.length===1?'':'s'}`:'No content matched your search.'}catch{state.textContent='Could not load catalog.'}}
+  let timer;search.addEventListener('input',()=>{clearTimeout(timer);timer=setTimeout(load,250)});category.addEventListener('change',load);sort.addEventListener('change',load);loadCategories().then(load);
+</script>

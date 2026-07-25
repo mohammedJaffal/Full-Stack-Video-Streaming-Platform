@@ -1,0 +1,13 @@
+---
+import Layout from '../layouts/Layout.astro';
+import ContentCard from '../components/ContentCard.astro';
+import { API_URL } from '../lib/api';
+let items=[]; let error='';
+try { const r=await fetch(`${API_URL}/api/content`); if(!r.ok) throw new Error(); items=await r.json(); } catch { error='Start the API to load the seeded catalog.'; }
+const featured=items[0];
+---
+<Layout title="StreamForge · Secure HLS Demo">
+  {featured ? <section class="hero" style={`background-image:linear-gradient(90deg,rgba(7,10,18,.96),rgba(7,10,18,.34)),url('${featured.backdrop_url}')`}><div class="hero-copy"><p class="eyebrow">Featured documentary</p><h1>{featured.title}</h1><p>{featured.description}</p><div class="actions"><a class="button" href={`/watch/${featured.slug}`}>▶ Play securely</a><a class="button ghost" href={`/content/${featured.slug}`}>More details</a></div></div></section> : <section class="hero"><div class="hero-copy"><h1>Secure streaming, connected end to end.</h1><p>{error}</p></div></section>}
+  <section class="page-section"><div class="section-heading"><div><p class="eyebrow">Discover</p><h2>Recently added</h2></div><a href="/explore">Browse all →</a></div><div class="card-grid">{items.map(item=><ContentCard item={item}/>)}</div></section>
+  <section class="page-section feature-strip"><article><strong>Short-lived URLs</strong><p>Playback sessions expire automatically.</p></article><article><strong>HLS controls</strong><p>Seeking, quality, subtitles, speed, and fullscreen.</p></article><article><strong>Operational dashboard</strong><p>Jobs, providers, and recent system logs.</p></article></section>
+</Layout>
