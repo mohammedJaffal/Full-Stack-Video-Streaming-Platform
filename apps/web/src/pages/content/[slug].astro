@@ -2,9 +2,50 @@
 import Layout from '../../layouts/Layout.astro';
 import ContentCard from '../../components/ContentCard.astro';
 import { API_URL } from '../../lib/api';
-const {slug}=Astro.params; let data=null;
-try{const r=await fetch(`${API_URL}/api/content/${slug}`);if(r.ok)data=await r.json();}catch{}
-if(!data) return Astro.redirect('/404');
-const minutes=Math.round(data.content.duration_seconds/60);
+
+const { slug } = Astro.params;
+let data = null;
+
+try {
+  const response = await fetch(`${API_URL}/api/content/${slug}`);
+  if (response.ok) data = await response.json();
+} catch {
+  // Redirect below when the content service is unavailable.
+}
+
+if (!data) return Astro.redirect('/404');
+const minutes = Math.round(data.content.duration_seconds / 60);
 ---
-<Layout title={`${data.content.title} · StreamForge`}><section class="details-hero" style={`background-image:linear-gradient(90deg,rgba(7,10,18,.98),rgba(7,10,18,.42)),url('${data.content.backdrop_url}')`}><div><p class="eyebrow">{data.content.category_name}</p><h1>{data.content.title}</h1><p>{data.content.description}</p><div class="meta"><span>{data.content.release_year}</span><span>{minutes} min</span><span>{data.subtitles.length?`${data.subtitles.length} subtitle track${data.subtitles.length===1?'':'s'}`:'No subtitles'}</span></div><a class="button" href={`/watch/${data.content.slug}`}>▶ Start playback</a></div></section><section class="page-section"><div class="section-heading"><h2>Related content</h2></div><div class="card-grid">{data.related.map(item=><ContentCard item={item}/>)}</div></section></Layout>
+
+<Layout title={`${data.content.title} · StreamForge`}>
+  <section
+    class="details-hero"
+    style={`background-image:linear-gradient(90deg,rgba(15,15,15,.96),rgba(15,15,15,.34)),url('${data.content.backdrop_url}')`}
+  >
+    <div>
+      <p class="eyebrow">{data.content.category_name}</p>
+      <h1>{data.content.title}</h1>
+      <p>{data.content.description}</p>
+      <div class="meta">
+        <span>{data.content.release_year}</span>
+        <span>{minutes} min</span>
+        <span>{data.subtitles.length ? `${data.subtitles.length} subtitle track${data.subtitles.length === 1 ? '' : 's'}` : 'No subtitles'}</span>
+      </div>
+      <a class="button" href={`/watch/${data.content.slug}`}>▶ Start playback</a>
+    </div>
+  </section>
+
+  {data.related.length >= 2 && (
+    <section class="page-section page-shell">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Continue exploring</p>
+          <h2>Related content</h2>
+        </div>
+      </div>
+      <div class="card-grid related-grid">
+        {data.related.slice(0, 4).map(item => <ContentCard item={item} />)}
+      </div>
+    </section>
+  )}
+</Layout>
