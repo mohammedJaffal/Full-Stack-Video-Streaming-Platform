@@ -1,5 +1,12 @@
 ---
-import Layout from '../../layouts/Layout.astro';
+import AdminLayout from '../../layouts/AdminLayout.astro';
 import ContentManager from '../../components/ContentManager';
 ---
-<Layout title="Content Management · StreamForge"><section class="page-section admin-page"><div class="section-heading"><div><p class="eyebrow">Administration</p><h1>Content management</h1></div><a class="button ghost" href="/admin">← Dashboard</a></div><ContentManager client:load/></section></Layout>
+<AdminLayout title="Catalog · StreamForge Studio" active="catalog">
+  <section class="admin-page">
+    <div class="admin-page-heading">
+      <div><p class="eyebrow">Catalog</p><h1>Content management</h1><p>Add, update, publish, or remove titles from the viewer catalog.</p></div>
+    </div>
+    <ContentManager client:load />
+  </section>
+</AdminLayout>
