@@ -93,6 +93,8 @@ export default function VideoPlayer({ contentId, poster, title }: VideoPlayerPro
         playsInline
         crossOrigin
         aspectRatio="16/9"
+        controlsDelay={3500}
+        hideControlsOnMouseLeave={false}
         onError={() => setError('This stream is temporarily unavailable.')}
       >
         <MediaProvider>
@@ -115,7 +117,7 @@ export default function VideoPlayer({ contentId, poster, title }: VideoPlayerPro
           Protected stream
         </div>
 
-        <DefaultVideoLayout icons={defaultLayoutIcons} />
+        <DefaultVideoLayout colorScheme="dark" icons={defaultLayoutIcons} />
       </MediaPlayer>
     </section>
   );
