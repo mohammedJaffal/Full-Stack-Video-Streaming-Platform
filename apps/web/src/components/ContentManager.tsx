@@ -97,26 +97,39 @@ export default function ContentManager() {
           )}
         </div>
         {message && <p className="success">{message}</p>}
-        <div className="form-grid">
-          <label>Title<input value={form.title} required onChange={(event) => setForm({ ...form, title: event.target.value, slug: event.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') })} /></label>
-          <label>Slug<input value={form.slug} required onChange={(event) => setForm({ ...form, slug: event.target.value })} /></label>
-          <label className="wide">Description<textarea value={form.description} required onChange={(event) => setForm({ ...form, description: event.target.value })} /></label>
-          <label>Year<input type="number" value={form.release_year} onChange={(event) => setForm({ ...form, release_year: Number(event.target.value) })} /></label>
-          <label>Duration seconds<input type="number" value={form.duration_seconds} onChange={(event) => setForm({ ...form, duration_seconds: Number(event.target.value) })} /></label>
-          <label>Category<select value={form.category_id} onChange={(event) => setForm({ ...form, category_id: Number(event.target.value) })}><option value="1">Nature</option><option value="2">Technology</option><option value="3">Education</option><option value="4">Documentary</option></select></label>
-          <label>Playback type<select value="hls" disabled><option value="hls">HLS</option></select></label>
-          <label>Active<select value={String(form.is_active)} onChange={(event) => setForm({ ...form, is_active: event.target.value === 'true' })}><option value="true">Enabled</option><option value="false">Disabled</option></select></label>
-          <label>Poster URL<input value={form.poster_url} onChange={(event) => setForm({ ...form, poster_url: event.target.value })} /></label>
-          <label>Backdrop URL<input value={form.backdrop_url} onChange={(event) => setForm({ ...form, backdrop_url: event.target.value })} /></label>
-          <label className="wide">HLS manifest URL<input value={form.playback_source} onChange={(event) => setForm({ ...form, playback_source: event.target.value })} /></label>
-        </div>
+
+        <fieldset className="form-section editorial-section">
+          <legend>Editorial metadata</legend>
+          <p className="form-section-note">The viewer-facing information used across Browse, detail pages, and search.</p>
+          <div className="form-grid">
+            <label>Title<input value={form.title} required onChange={(event) => setForm({ ...form, title: event.target.value, slug: event.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') })} /></label>
+            <label>Slug<input value={form.slug} required onChange={(event) => setForm({ ...form, slug: event.target.value })} /></label>
+            <label className="wide">Description<textarea value={form.description} required onChange={(event) => setForm({ ...form, description: event.target.value })} /></label>
+            <label>Category<select value={form.category_id} onChange={(event) => setForm({ ...form, category_id: Number(event.target.value) })}><option value="1">Nature</option><option value="2">Technology</option><option value="3">Education</option><option value="4">Documentary</option></select></label>
+            <label>Year<input type="number" value={form.release_year} onChange={(event) => setForm({ ...form, release_year: Number(event.target.value) })} /></label>
+            <label>Duration seconds<input type="number" value={form.duration_seconds} onChange={(event) => setForm({ ...form, duration_seconds: Number(event.target.value) })} /></label>
+            <label>Active<select value={String(form.is_active)} onChange={(event) => setForm({ ...form, is_active: event.target.value === 'true' })}><option value="true">Enabled</option><option value="false">Disabled</option></select></label>
+          </div>
+        </fieldset>
+
+        <fieldset className="form-section technical-section">
+          <legend>Playback configuration</legend>
+          <p className="form-section-note">Technical delivery settings for artwork and the HLS stream source.</p>
+          <div className="form-grid">
+            <label>Playback type<select value="hls" disabled><option value="hls">HLS</option></select></label>
+            <label>Poster URL<input value={form.poster_url} onChange={(event) => setForm({ ...form, poster_url: event.target.value })} /></label>
+            <label>Backdrop URL<input value={form.backdrop_url} onChange={(event) => setForm({ ...form, backdrop_url: event.target.value })} /></label>
+            <label className="wide">HLS manifest URL<input value={form.playback_source} onChange={(event) => setForm({ ...form, playback_source: event.target.value })} /></label>
+          </div>
+        </fieldset>
+
         <button type="submit">{editing ? 'Save changes' : 'Create content'}</button>
       </form>
 
       <section className="panel">
         <p className="eyebrow">Catalog</p><h2>All content</h2>
         <div className="table-wrap"><table><thead><tr><th>Title</th><th>Category</th><th>Type</th><th>Status</th><th>Actions</th></tr></thead><tbody>
-          {items.map((item) => <tr key={item.id}><td><strong>{item.title}</strong><br/><small>{item.slug}</small></td><td>{item.category_name}</td><td>HLS</td><td><span className={`status ${item.is_active ? 'completed' : 'failed'}`}>{item.is_active ? 'active' : 'disabled'}</span></td><td><button className="ghost" onClick={() => edit(item)}>Edit</button>{' '}<button className="danger" onClick={() => void remove(item.id)}>Delete</button></td></tr>)}
+          {items.map((item) => <tr key={item.id}><td><strong>{item.title}</strong><br/><small>{item.slug}</small></td><td>{item.category_name}</td><td>HLS</td><td><span className={`status ${item.is_active ? 'completed' : 'failed'}`}>{item.is_active ? 'active' : 'disabled'}</span></td><td><div className="table-actions"><button className="ghost" onClick={() => edit(item)}>Edit</button><button className="delete-action" onClick={() => void remove(item.id)}>Delete</button></div></td></tr>)}
         </tbody></table></div>
       </section>
     </div>
