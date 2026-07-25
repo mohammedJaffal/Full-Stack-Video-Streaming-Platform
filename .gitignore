@@ -16,3 +16,12 @@ dist
 .DS_Store
 .vscode
 .idea
+
+cloudflare/media-relay/.dev.vars
+.env
+cloudflare/media-relay/.dev.vars
+
+.env
+cloudflare/media-relay/.dev.vars
+
+cloudflare/media-relay/.wrangler/
