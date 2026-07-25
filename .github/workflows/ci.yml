@@ -12,6 +12,7 @@ jobs:
         with: { components: rustfmt }
       - run: cargo fmt --all -- --check
       - run: cargo check --workspace
+      - run: cargo test --workspace
   web:
     runs-on: ubuntu-latest
     defaults: { run: { working-directory: apps/web } }
@@ -30,3 +31,4 @@ jobs:
         with: { node-version: 22 }
       - run: npm install
       - run: npm run check
+      - run: npm test
