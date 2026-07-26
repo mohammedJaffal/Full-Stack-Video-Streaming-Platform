@@ -16,12 +16,15 @@ import Layout from '../../layouts/Layout.astro';
 </Layout>
 <script>
   const API = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
-  const form = document.querySelector('#login');
-  const error = document.querySelector('#error');
+  const form = document.querySelector<HTMLFormElement>('#login');
+  const error = document.querySelector<HTMLElement>('#error');
+  const button = form?.querySelector<HTMLButtonElement>('button[type="submit"]');
+
+  if (!form || !error || !button) throw new Error('Login form is incomplete');
+
   form.addEventListener('submit', async event => {
     event.preventDefault();
     error.textContent = '';
-    const button = form.querySelector('button');
     button.disabled = true;
     button.textContent = 'Signing in…';
     try {

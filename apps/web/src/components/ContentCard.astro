@@ -1,4 +1,10 @@
 ---
+import type { ContentSummary } from '../lib/types';
+
+interface Props {
+  item: ContentSummary;
+}
+
 const { item } = Astro.props;
 const minutes = Math.round(item.duration_seconds / 60);
 ---

@@ -2,12 +2,14 @@
 import Layout from '../layouts/Layout.astro';
 import ContentCard from '../components/ContentCard.astro';
 import { API_URL } from '../lib/api';
-let items = [];
+import type { ContentSummary } from '../lib/types';
+
+let items: ContentSummary[] = [];
 let error = '';
 try {
   const response = await fetch(`${API_URL}/api/content`);
   if (!response.ok) throw new Error();
-  items = await response.json();
+  items = await response.json() as ContentSummary[];
 } catch {
   error = 'The catalog service is temporarily unavailable.';
 }

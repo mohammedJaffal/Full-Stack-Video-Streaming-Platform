@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import type { FormEvent } from 'react';
 import { api, authHeaders } from '../lib/api';
 
 type ContentForm = {
@@ -52,7 +51,7 @@ export default function ContentManager() {
     void load();
   }, []);
 
-  const submit = async (event: FormEvent) => {
+  const submit = async (event: React.SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     const path = editing ? `/api/admin/content/${editing}` : '/api/admin/content';
     await api(path, {

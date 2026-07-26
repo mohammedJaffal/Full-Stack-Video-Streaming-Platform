@@ -16,19 +16,48 @@ import Layout from '../layouts/Layout.astro';
   </section>
 </Layout>
 <script>
+  type Category = { id: number; name: string; slug: string };
+  type Content = {
+    slug: string;
+    title: string;
+    poster_url: string;
+    category_name: string;
+    release_year: number;
+    duration_seconds: number;
+  };
+
   const API = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
-  const search = document.querySelector('#search');
-  const category = document.querySelector('#category');
-  const sort = document.querySelector('#sort');
-  const results = document.querySelector('#results');
-  const state = document.querySelector('#state');
-  const escape = value => String(value).replace(/[&<>'"]/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[character]));
+  const requireElement = <T extends Element>(selector: string) => {
+    const element = document.querySelector<T>(selector);
+    if (!element) throw new Error(`Missing required element: ${selector}`);
+    return element;
+  };
+  const search = requireElement<HTMLInputElement>('#search');
+  const category = requireElement<HTMLSelectElement>('#category');
+  const sort = requireElement<HTMLSelectElement>('#sort');
+  const results = requireElement<HTMLElement>('#results');
+  const state = requireElement<HTMLElement>('#state');
+  const entities: Record<string, string> = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    "'": '&#39;',
+    '"': '&quot;',
+  };
+  const escapeHtml = (value: unknown) =>
+    String(value).replace(/[&<>'"]/g, character => entities[character] ?? character);
 
   async function loadCategories() {
     try {
       const response = await fetch(`${API}/api/categories`);
       if (!response.ok) throw new Error();
-      for (const item of await response.json()) category.insertAdjacentHTML('beforeend', `<option value="${escape(item.slug)}">${escape(item.name)}</option>`);
+      const items = await response.json() as Category[];
+      for (const item of items) {
+        category.insertAdjacentHTML(
+          'beforeend',
+          `<option value="${escapeHtml(item.slug)}">${escapeHtml(item.name)}</option>`,
+        );
+      }
     } catch {}
   }
 
@@ -39,11 +68,11 @@ import Layout from '../layouts/Layout.astro';
     try {
       const response = await fetch(`${API}/api/content?${params}`);
       if (!response.ok) throw new Error();
-      const items = await response.json();
+      const items = await response.json() as Content[];
       results.innerHTML = items.map(item => `
-        <a class="content-card" href="/content/${escape(item.slug)}">
-          <div class="poster-wrap"><img src="${escape(item.poster_url)}" alt="${escape(item.title)} poster"><span class="card-overlay" aria-hidden="true">▶</span></div>
-          <div class="card-copy"><h3>${escape(item.title)}</h3><p>${escape(item.category_name)} · ${item.release_year} · ${Math.round(item.duration_seconds / 60)} min</p></div>
+        <a class="content-card" href="/content/${escapeHtml(item.slug)}">
+          <div class="poster-wrap"><img src="${escapeHtml(item.poster_url)}" alt="${escapeHtml(item.title)} poster"><span class="card-overlay" aria-hidden="true">▶</span></div>
+          <div class="card-copy"><h3>${escapeHtml(item.title)}</h3><p>${escapeHtml(item.category_name)} · ${item.release_year} · ${Math.round(item.duration_seconds / 60)} min</p></div>
         </a>`).join('');
       state.textContent = items.length ? `${items.length} title${items.length === 1 ? '' : 's'}` : '';
       if (!items.length) {
@@ -56,8 +85,11 @@ import Layout from '../layouts/Layout.astro';
     }
   }
 
-  let timer;
-  search.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(load, 250); });
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  search.addEventListener('input', () => {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(load, 250);
+  });
   category.addEventListener('change', load);
   sort.addEventListener('change', load);
   loadCategories().then(load);

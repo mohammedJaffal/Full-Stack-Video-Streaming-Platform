@@ -1,10 +1,11 @@
 use axum::{
     extract::{Path, State},
-    http::StatusCode,
+    http::{StatusCode, Uri},
     Json,
 };
 use redis::AsyncCommands;
 use serde_json::{json, Value};
+use std::str::FromStr;
 use uuid::Uuid;
 
 use crate::{
@@ -27,7 +28,27 @@ fn validate_hls_content(input: &AdminContentInput) -> Result<(), AppError> {
             "only HLS playback is supported".into(),
         ));
     }
-    if !input.playback_source.to_ascii_lowercase().contains(".m3u8") {
+
+    let source = Uri::from_str(input.playback_source.trim()).map_err(|_| {
+        AppError(
+            StatusCode::BAD_REQUEST,
+            "playback source must be a valid URL".into(),
+        )
+    })?;
+
+    if source.scheme_str() != Some("https")
+        || source.host().is_none()
+        || source
+            .authority()
+            .is_some_and(|authority| authority.as_str().contains('@'))
+    {
+        return Err(AppError(
+            StatusCode::BAD_REQUEST,
+            "playback source must use HTTPS".into(),
+        ));
+    }
+
+    if !source.path().to_ascii_lowercase().ends_with(".m3u8") {
         return Err(AppError(
             StatusCode::BAD_REQUEST,
             "playback source must be an HLS manifest URL".into(),
@@ -92,7 +113,7 @@ pub async fn create_content(
         .bind(input.poster_url)
         .bind(input.backdrop_url)
         .bind(input.category_id)
-        .bind(input.playback_source)
+        .bind(input.playback_source.trim())
         .bind("hls")
         .bind(input.is_active)
         .execute(&state.db)
@@ -120,7 +141,7 @@ pub async fn update_content(
         .bind(input.poster_url)
         .bind(input.backdrop_url)
         .bind(input.category_id)
-        .bind(input.playback_source)
+        .bind(input.playback_source.trim())
         .bind(input.is_active)
         .bind(id)
         .execute(&state.db)
@@ -287,8 +308,23 @@ mod tests {
     fn accepts_hls_manifest() {
         assert!(validate_hls_content(&input(
             "hls",
-            "https://example.com/master.m3u8"
+            "https://example.com/master.M3U8?quality=auto"
         ))
         .is_ok());
+    }
+
+    #[test]
+    fn rejects_insecure_hls_manifest() {
+        let error =
+            validate_hls_content(&input("hls", "http://example.com/master.m3u8")).unwrap_err();
+        assert_eq!(error.0, StatusCode::BAD_REQUEST);
+    }
+
+    #[test]
+    fn rejects_m3u8_text_outside_the_url_path() {
+        let error =
+            validate_hls_content(&input("hls", "https://example.com/video?file=master.m3u8"))
+                .unwrap_err();
+        assert_eq!(error.0, StatusCode::BAD_REQUEST);
     }
 }

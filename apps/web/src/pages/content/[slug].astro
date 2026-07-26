@@ -2,13 +2,14 @@
 import Layout from '../../layouts/Layout.astro';
 import ContentCard from '../../components/ContentCard.astro';
 import { API_URL } from '../../lib/api';
+import type { ContentDetails } from '../../lib/types';
 
 const { slug } = Astro.params;
-let data = null;
+let data: ContentDetails | null = null;
 
 try {
   const response = await fetch(`${API_URL}/api/content/${slug}`);
-  if (response.ok) data = await response.json();
+  if (response.ok) data = await response.json() as ContentDetails;
 } catch {
   // Redirect below when the content service is unavailable.
 }

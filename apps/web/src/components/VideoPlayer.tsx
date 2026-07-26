@@ -21,6 +21,8 @@ type Playback = {
   subtitles: Subtitle[];
 };
 
+type CaptionFormat = 'vtt' | 'srt' | 'ssa' | 'ass' | 'json';
+
 type VideoPlayerProps = {
   contentId: number;
   poster: string;
@@ -32,6 +34,13 @@ export default function VideoPlayer({ contentId, poster, title }: VideoPlayerPro
   const [playback, setPlayback] = useState<Playback | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+
+  const captionFormat = (format: string): CaptionFormat => {
+    const normalized = format.toLowerCase();
+    return ['vtt', 'srt', 'ssa', 'ass', 'json'].includes(normalized)
+      ? normalized as CaptionFormat
+      : 'vtt';
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -152,12 +161,12 @@ export default function VideoPlayer({ contentId, poster, title }: VideoPlayerPro
           <Poster className="vds-poster" src={poster} alt={`${title} poster`} />
           {playback.subtitles.map(track => (
             <Track
-              key={track.id}
+              key={String(track.id)}
               src={track.file_url}
               kind="subtitles"
               label={track.label}
               lang={track.language_code}
-              type={track.format || 'vtt'}
+              type={captionFormat(track.format)}
               default={track.is_default}
             />
           ))}

@@ -7,7 +7,8 @@ A production-oriented portfolio application connecting an Astro/React frontend, 
 - Public home, explore, details, and watch pages
 - Responsive HLS playback with seeking, quality selection, subtitles, speed, volume, and fullscreen
 - Short-lived signed playback sessions
-- Cloudflare Worker manifest rewriting and protected segment relay with range forwarding
+- Cloudflare Worker manifest rewriting and protected segment relay with strict origin and range validation
+- Sanitized upstream media responses, redirect confinement, and a relay health endpoint
 - Demo administrator login and protected dashboard
 - Content create, edit, enable/disable, and delete flows
 - Redis-backed metadata enrichment, subtitle import, and duplicate detection jobs
@@ -57,8 +58,13 @@ Demo credentials are configured through `.env` and default to `admin@example.com
 1. The watch page creates a playback session through the Axum API.
 2. The API validates content state and signs a short-lived token.
 3. The Cloudflare Worker validates signature and expiry.
-4. The Worker rewrites HLS manifest URIs through its protected relay.
-5. Segment requests remain token-protected and preserve Range headers.
+4. The Worker confines manifests, redirects, keys, and segments to the signed source origin.
+5. The Worker rewrites HLS manifest URIs through its protected relay.
+6. Segment requests remain token-protected, preserve valid single Range headers, and return only safe upstream headers.
+
+The relay exposes `GET /health` for platform probes. Authentication failures return `401`,
+invalid relay targets return `4xx`, and upstream transport failures return `502` so monitoring
+can distinguish authorization problems from provider outages.
 
 This is portfolio access control, not DRM.
 
@@ -67,8 +73,8 @@ This is portfolio access control, not DRM.
 ```bash
 cargo fmt --all -- --check
 cargo check --workspace
-cd apps/web && npm install && npm run check
-cd ../../cloudflare/media-relay && npm install && npm run check
+cd apps/web && npm ci && npm run check
+cd ../../cloudflare/media-relay && npm ci && npm run check && npm test
 ```
 
 The seeded player uses an openly available HLS test stream. Catalog titles, artwork, providers, and operational data are fictional demo content.
